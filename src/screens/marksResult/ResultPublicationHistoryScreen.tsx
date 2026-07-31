@@ -1,0 +1,1 @@
+export { ResultPublicationHistoryScreen } from './MarksResultScreens';

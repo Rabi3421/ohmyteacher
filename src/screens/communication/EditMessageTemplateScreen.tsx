@@ -1,0 +1,1 @@
+export { EditMessageTemplateScreen } from './CommunicationScreens';

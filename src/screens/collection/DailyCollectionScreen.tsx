@@ -1,0 +1,1 @@
+export { DailyCollectionScreen } from './CollectionScreens';

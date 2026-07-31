@@ -1,0 +1,1 @@
+export { CommunicationSettingsScreen } from './CommunicationScreens';

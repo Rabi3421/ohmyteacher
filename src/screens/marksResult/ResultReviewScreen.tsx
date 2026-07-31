@@ -1,0 +1,1 @@
+export { ResultReviewScreen } from './MarksResultScreens';

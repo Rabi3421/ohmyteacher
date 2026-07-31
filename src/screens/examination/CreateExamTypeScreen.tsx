@@ -1,0 +1,1 @@
+export { CreateExamTypeScreen } from './ExaminationScreens';

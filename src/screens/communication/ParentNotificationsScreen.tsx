@@ -1,0 +1,1 @@
+export { ParentNotificationsScreen } from './CommunicationScreens';

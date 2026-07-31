@@ -1,0 +1,1 @@
+export { ResultCalculationResultScreen } from './MarksResultScreens';

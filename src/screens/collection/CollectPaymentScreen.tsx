@@ -1,0 +1,1 @@
+export { CollectPaymentScreen } from './CollectionScreens';

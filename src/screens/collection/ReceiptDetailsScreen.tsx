@@ -1,0 +1,1 @@
+export { ReceiptDetailsScreen } from './CollectionScreens';

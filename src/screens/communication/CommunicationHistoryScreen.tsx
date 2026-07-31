@@ -1,0 +1,1 @@
+export { CommunicationHistoryScreen } from './CommunicationScreens';

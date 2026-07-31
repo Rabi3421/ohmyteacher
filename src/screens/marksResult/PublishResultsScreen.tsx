@@ -1,0 +1,1 @@
+export { PublishResultsScreen } from './MarksResultScreens';

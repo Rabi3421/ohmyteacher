@@ -1,0 +1,1 @@
+export { SubmitMarkSheetScreen } from './MarksResultScreens';

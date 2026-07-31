@@ -1,0 +1,1 @@
+export { EditExamTermScreen } from './ExaminationScreens';

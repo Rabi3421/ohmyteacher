@@ -1,0 +1,1 @@
+export { GradingSchemesScreen } from './ExaminationScreens';

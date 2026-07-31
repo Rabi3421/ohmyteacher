@@ -1,0 +1,1 @@
+export { ReversePaymentScreen } from './CollectionScreens';

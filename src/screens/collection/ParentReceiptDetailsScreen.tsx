@@ -1,0 +1,1 @@
+export { ParentReceiptDetailsScreen } from './CollectionScreens';

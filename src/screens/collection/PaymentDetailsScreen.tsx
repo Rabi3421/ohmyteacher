@@ -1,0 +1,1 @@
+export { PaymentDetailsScreen } from './CollectionScreens';

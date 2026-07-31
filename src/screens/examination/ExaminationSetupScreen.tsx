@@ -1,0 +1,1 @@
+export { ExaminationSetupScreen } from './ExaminationScreens';

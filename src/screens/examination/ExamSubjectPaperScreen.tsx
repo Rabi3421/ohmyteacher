@@ -1,0 +1,1 @@
+export { ExamSubjectPaperScreen } from './ExaminationScreens';

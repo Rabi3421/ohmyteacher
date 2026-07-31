@@ -1,0 +1,1 @@
+export { StudentReceiptDetailsScreen } from './CollectionScreens';

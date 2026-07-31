@@ -1,0 +1,1 @@
+export { BulkReminderSetupScreen } from './CommunicationScreens';

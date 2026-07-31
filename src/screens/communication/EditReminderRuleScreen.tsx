@@ -1,0 +1,1 @@
+export { EditReminderRuleScreen } from './CommunicationScreens';

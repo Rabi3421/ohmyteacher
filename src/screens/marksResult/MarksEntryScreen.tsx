@@ -1,0 +1,1 @@
+export { MarksEntryScreen } from './MarksResultScreens';

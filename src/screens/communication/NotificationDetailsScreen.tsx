@@ -1,0 +1,1 @@
+export { NotificationDetailsScreen } from './CommunicationScreens';

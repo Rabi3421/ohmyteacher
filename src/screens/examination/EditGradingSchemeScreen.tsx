@@ -1,0 +1,1 @@
+export { EditGradingSchemeScreen } from './ExaminationScreens';

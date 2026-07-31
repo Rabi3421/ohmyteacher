@@ -1,0 +1,1 @@
+export { ApplyAdvanceCreditScreen } from './CollectionScreens';

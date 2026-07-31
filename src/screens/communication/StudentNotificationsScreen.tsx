@@ -1,0 +1,1 @@
+export { StudentNotificationsScreen } from './CommunicationScreens';

@@ -1,0 +1,1 @@
+export { ExamTypeDetailsScreen } from './ExaminationScreens';

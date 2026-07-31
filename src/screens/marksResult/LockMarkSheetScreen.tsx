@@ -1,0 +1,1 @@
+export { LockMarkSheetScreen } from './MarksResultScreens';

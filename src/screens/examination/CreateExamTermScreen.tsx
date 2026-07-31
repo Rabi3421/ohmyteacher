@@ -1,0 +1,1 @@
+export { CreateExamTermScreen } from './ExaminationScreens';

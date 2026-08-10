@@ -10,8 +10,10 @@ import { AppScreen } from '../components/common/AppScreen';
 import { ErrorState } from '../components/feedback/ErrorState';
 import { useAppTheme } from '../hooks/useAppTheme';
 import { AccountInactiveScreen } from '../screens/auth/AccountInactiveScreen';
+import { NewUserOnboardingScreen } from '../screens/auth/NewUserOnboardingScreen';
 import { SessionExpiredScreen } from '../screens/auth/SessionExpiredScreen';
 import { SplashScreen } from '../screens/auth/SplashScreen';
+import { UnsupportedRoleScreen } from '../screens/auth/UnsupportedRoleScreen';
 import { WorkspaceSelectionScreen } from '../screens/auth/WorkspaceSelectionScreen';
 import { useAuthStore } from '../store';
 import { AccountantNavigator } from './AccountantNavigator';
@@ -60,6 +62,10 @@ export function RootNavigator() {
       {status === 'membershipRequired' ? (
         <WorkspaceSelectionScreen />
       ) : null}
+      {status === 'onboardingRequired' ? (
+        <NewUserOnboardingScreen />
+      ) : null}
+      {status === 'unsupportedRole' ? <UnsupportedRoleScreen /> : null}
       {status === 'inactive' ? <AccountInactiveScreen /> : null}
       {status === 'sessionExpired' ? <SessionExpiredScreen /> : null}
       {status === 'authenticated' ? (

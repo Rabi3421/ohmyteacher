@@ -18,7 +18,7 @@ import { ROUTES } from '../../constants/routes';
 import { useAcademicAccess } from '../../hooks/useAcademicAccess';
 import { useAppTheme } from '../../hooks/useAppTheme';
 import { useDebounce } from '../../hooks/useDebounce';
-import type { Subject, SubjectType } from '../../models/academic';
+import type { Subject } from '../../models/academic';
 import type { RoleScreenProps } from '../../navigation/navigationTypes';
 import { useAcademicStore } from '../../store';
 
@@ -41,12 +41,11 @@ export function SubjectsScreen({
   const updateStatus = useAcademicStore(state => state.updateSubjectStatus);
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState<'ALL' | 'ACTIVE' | 'INACTIVE'>('ALL');
-  const [type, setType] = useState<SubjectType | 'ALL'>('ALL');
   const [pending, setPending] = useState<Subject | null>(null);
   const debouncedSearch = useDebounce(search, 300);
 
   useEffect(() => {
-    setQuery({ page: 1, search: debouncedSearch, status, type });
+    setQuery({ page: 1, search: debouncedSearch, status, type: 'ALL' });
     loadSubjects(schoolId).catch(() => undefined);
   }, [
     debouncedSearch,
@@ -54,7 +53,6 @@ export function SubjectsScreen({
     schoolId,
     setQuery,
     status,
-    type,
   ]);
 
   return (
@@ -110,23 +108,6 @@ export function SubjectsScreen({
               />
             ))}
           </View>
-          <AppText style={styles.label} variant="caption">
-            Type
-          </AppText>
-          <View style={styles.filters}>
-            {(['ALL', 'CORE', 'ELECTIVE', 'OPTIONAL'] as const).map(option => (
-              <AppButton
-                key={option}
-                onPress={() => setType(option)}
-                title={
-                  option === 'ALL'
-                    ? 'All'
-                    : option[0] + option.slice(1).toLowerCase()
-                }
-                variant={type === option ? 'primary' : 'outline'}
-              />
-            ))}
-          </View>
           {isLoading && subjects.items.length === 0 ? (
             <LoadingView message="Loading subjects…" />
           ) : error && subjects.items.length === 0 ? (
@@ -162,10 +143,10 @@ export function SubjectsScreen({
                   <View style={styles.row}>
                     <View style={styles.copy}>
                       <AppText variant="title">
-                        {item.displayOrder}. {item.name}
+                        {item.name}
                       </AppText>
                       <AppText color={theme.colors.primary} variant="caption">
-                        {item.code} · {item.type}
+                        {item.code || 'No code'}
                       </AppText>
                     </View>
                     <AppBadge
@@ -220,7 +201,7 @@ export function SubjectsScreen({
         confirmLabel="Deactivate"
         destructive
         loading={isSaving}
-        message="A subject with active class assignments cannot be deactivated. Assignment history is preserved."
+        message="Django keeps existing teacher assignments when a subject is deactivated. The subject will no longer be eligible for new assignment selection."
         onCancel={() => setPending(null)}
         onConfirm={async () => {
           if (

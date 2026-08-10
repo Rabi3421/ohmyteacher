@@ -102,7 +102,7 @@ export function SectionsScreen({
         />
         <AppSearchInput
           onChangeText={setSearch}
-          placeholder="Search section name or code"
+          placeholder="Search section name"
           value={search}
         />
         <View style={styles.filters}>
@@ -149,10 +149,7 @@ export function SectionsScreen({
                 <View style={styles.row}>
                   <View style={styles.copy}>
                     <AppText variant="title">
-                      {item.displayOrder}. {item.name}
-                    </AppText>
-                    <AppText color={theme.colors.primary} variant="caption">
-                      {item.code}
+                      {item.name}
                     </AppText>
                   </View>
                   <AppBadge

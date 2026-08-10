@@ -19,9 +19,7 @@ export function canViewStaff(
 ): boolean {
   return (
     inSchool(membership, schoolId) &&
-    (role === 'SUPER_ADMIN' ||
-      role === 'SCHOOL_ADMIN' ||
-      role === 'BRANCH_ADMIN')
+    (role === 'SCHOOL_ADMIN' || role === 'BRANCH_ADMIN')
   );
 }
 
@@ -32,15 +30,33 @@ export function canCreateStaff(
 ): boolean {
   return (
     inSchool(membership, schoolId) &&
-    (role === 'SUPER_ADMIN' || role === 'SCHOOL_ADMIN')
+    (role === 'SCHOOL_ADMIN' || role === 'BRANCH_ADMIN')
   );
 }
 
 export const canEditStaff = canCreateStaff;
-export const canAssignBranches = canCreateStaff;
+export function canAssignBranches(
+  role: AppRole,
+  membership: UserMembership,
+  schoolId: string,
+): boolean {
+  return role === 'SCHOOL_ADMIN' && membership.schoolId === schoolId;
+}
 export const canChangeMembershipStatus = canCreateStaff;
-export const canRevokeUserSessions = canCreateStaff;
-export const canViewUserActivity = canViewStaff;
+export function canRevokeUserSessions(
+  _role?: AppRole,
+  _membership?: UserMembership,
+  _schoolId?: string,
+): boolean {
+  return false;
+}
+export function canViewUserActivity(
+  _role?: AppRole,
+  _membership?: UserMembership,
+  _schoolId?: string,
+): boolean {
+  return false;
+}
 
 export function canAssignRole(
   actorRole: AppRole,

@@ -149,12 +149,12 @@ describe('mock academic service', () => {
           capacity: 48,
           code: 'B',
           displayOrder: 2,
-          name: 'Section Beta',
+          name: 'Beta',
           status: 'ACTIVE',
         },
       ),
     );
-    expect(updated.data.name).toBe('Section Beta');
+    expect(updated.data.name).toBe('Beta');
     await finish(
       mockAcademicService.updateSectionStatus(
         context,

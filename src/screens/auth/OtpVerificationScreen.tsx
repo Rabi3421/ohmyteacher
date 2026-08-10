@@ -166,14 +166,16 @@ export function OtpVerificationScreen({
           <InlineError message={apiError.message} />
         ) : null}
         <AppButton
-          disabled={offline || expiryRemaining === 0 || otp.length !== 6}
+          disabled={
+            offline || isLoading || expiryRemaining === 0 || otp.length !== 6
+          }
           fullWidth
           loading={isLoading}
           onPress={handleVerify}
           title="Verify and Continue"
         />
         <AppButton
-          disabled={resendRemaining > 0 || offline}
+          disabled={resendRemaining > 0 || offline || isLoading}
           fullWidth
           onPress={handleResend}
           title={

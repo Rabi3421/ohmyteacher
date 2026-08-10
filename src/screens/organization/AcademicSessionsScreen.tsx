@@ -23,7 +23,7 @@ import { formatDisplayDate } from '../../utils/date';
 import { canManageAcademicSessions } from '../../utils/organizationPermissions';
 
 type PendingAction = {
-  action: 'activate' | 'close';
+  action: 'activate';
   session: AcademicSession;
 };
 
@@ -49,9 +49,6 @@ export function AcademicSessionsScreen({
   );
   const activateSession = useOrganizationStore(
     state => state.activateAcademicSession,
-  );
-  const closeSession = useOrganizationStore(
-    state => state.closeAcademicSession,
   );
   const [pending, setPending] = useState<PendingAction>();
 
@@ -144,34 +141,23 @@ export function AcademicSessionsScreen({
                   </AppText>
                   {canManage ? (
                     <View style={styles.actions}>
+                      <AppButton
+                        onPress={() =>
+                          navigation.navigate(
+                            ROUTES.EDIT_ACADEMIC_SESSION,
+                            { schoolId, sessionId: session.id },
+                          )
+                        }
+                        title="Edit"
+                        variant="outline"
+                      />
                       {session.status === 'UPCOMING' ? (
-                        <>
-                          <AppButton
-                            onPress={() =>
-                              navigation.navigate(
-                                ROUTES.EDIT_ACADEMIC_SESSION,
-                                { schoolId, sessionId: session.id },
-                              )
-                            }
-                            title="Edit"
-                            variant="outline"
-                          />
                           <AppButton
                             onPress={() =>
                               setPending({ action: 'activate', session })
                             }
                             title="Activate"
                           />
-                        </>
-                      ) : null}
-                      {session.status === 'ACTIVE' ? (
-                        <AppButton
-                          onPress={() =>
-                            setPending({ action: 'close', session })
-                          }
-                          title="Close Session"
-                          variant="danger"
-                        />
                       ) : null}
                     </View>
                   ) : null}
@@ -182,28 +168,18 @@ export function AcademicSessionsScreen({
         </View>
       </AppScreen>
       <ConfirmationDialog
-        confirmLabel={pending?.action === 'close' ? 'Close' : 'Activate'}
-        destructive={pending?.action === 'close'}
+        confirmLabel="Activate"
         loading={isSaving}
         message={
-          pending?.action === 'close'
-            ? 'Closing a session is final in this phase and removes it from active use.'
-            : 'Activating this session will atomically close the currently active session.'
+          'Activating this session atomically deactivates the school’s currently active session.'
         }
         onCancel={() => setPending(undefined)}
         onConfirm={async () => {
           if (!pending) return;
-          const updated =
-            pending.action === 'activate'
-              ? await activateSession(schoolId, pending.session.id)
-              : await closeSession(schoolId, pending.session.id);
+          const updated = await activateSession(schoolId, pending.session.id);
           if (updated) setPending(undefined);
         }}
-        title={
-          pending?.action === 'close'
-            ? `Close ${pending.session.name}?`
-            : `Activate ${pending?.session.name ?? 'session'}?`
-        }
+        title={`Activate ${pending?.session.name ?? 'session'}?`}
         visible={Boolean(pending)}
       />
     </>

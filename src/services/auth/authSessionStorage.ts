@@ -41,7 +41,7 @@ export function createAuthSessionStorage(
     },
 
     async saveTokens(tokens) {
-      await Promise.all([
+      const results = await Promise.allSettled([
         storage.setItem(STORAGE_KEYS.AUTH_TOKEN, tokens.accessToken),
         storage.setItem(STORAGE_KEYS.REFRESH_TOKEN, tokens.refreshToken),
         storage.setItem(
@@ -49,6 +49,18 @@ export function createAuthSessionStorage(
           tokens.expiresAt,
         ),
       ]);
+      const failed = results.find(
+        (result): result is PromiseRejectedResult =>
+          result.status === 'rejected',
+      );
+      if (failed) {
+        await Promise.allSettled([
+          storage.removeItem(STORAGE_KEYS.AUTH_TOKEN),
+          storage.removeItem(STORAGE_KEYS.REFRESH_TOKEN),
+          storage.removeItem(STORAGE_KEYS.AUTH_TOKEN_EXPIRES_AT),
+        ]);
+        throw failed.reason;
+      }
     },
 
     async saveActiveMembershipId(id) {

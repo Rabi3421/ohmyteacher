@@ -14,12 +14,13 @@ import { LoadingView } from '../../components/feedback/LoadingView';
 import { ROUTES } from '../../constants/routes';
 import { useAppTheme } from '../../hooks/useAppTheme';
 import type { RoleScreenProps } from '../../navigation/navigationTypes';
-import { useAuthStore, useOrganizationStore } from '../../store';
+import { useAuthStore, useCurrentOrganizationStore } from '../../store';
 import { formatDisplayDate } from '../../utils/date';
-import {
-  canChangeBranchStatus,
-  canEditBranch,
-} from '../../utils/organizationPermissions';
+
+function maskPhone(phone: string): string {
+  if (!phone) return '—';
+  return phone.length <= 4 ? '••••' : `••••••${phone.slice(-4)}`;
+}
 
 export function BranchDetailsScreen({
   navigation,
@@ -28,198 +29,111 @@ export function BranchDetailsScreen({
   const theme = useAppTheme();
   const { branchId, schoolId } = route.params;
   const membership = useAuthStore(state => state.activeMembership);
-  const school = useOrganizationStore(state => state.currentSchool);
-  const branch = useOrganizationStore(state => state.currentBranch);
-  const sessions = useOrganizationStore(state => state.academicSessions);
-  const isLoading = useOrganizationStore(state => state.isLoadingBranches);
-  const isSaving = useOrganizationStore(state => state.isSavingBranch);
-  const error = useOrganizationStore(state => state.error);
-  const loadSchool = useOrganizationStore(state => state.loadSchool);
-  const loadBranch = useOrganizationStore(state => state.loadBranch);
-  const loadSessions = useOrganizationStore(
-    state => state.loadAcademicSessions,
-  );
-  const updateStatus = useOrganizationStore(
-    state => state.updateBranchStatus,
-  );
+  const logout = useAuthStore(state => state.logout);
+  const school = useCurrentOrganizationStore(state => state.currentSchool);
+  const branch = useCurrentOrganizationStore(state => state.currentBranch);
+  const isLoading = useCurrentOrganizationStore(state => state.isLoadingBranches);
+  const isSaving = useCurrentOrganizationStore(state => state.isSavingBranch);
+  const error = useCurrentOrganizationStore(state => state.branchError);
+  const mutationError = useCurrentOrganizationStore(state => state.mutationError);
+  const loadSchool = useCurrentOrganizationStore(state => state.loadCurrentSchool);
+  const loadBranch = useCurrentOrganizationStore(state => state.loadBranch);
+  const cancelSchool = useCurrentOrganizationStore(state => state.cancelSchoolRequest);
+  const cancelBranch = useCurrentOrganizationStore(state => state.cancelBranchRequest);
+  const updateStatus = useCurrentOrganizationStore(state => state.setBranchStatus);
   const [confirmVisible, setConfirmVisible] = useState(false);
+  const validId = /^[1-9]\d*$/.test(branchId);
+  const authorized =
+    validId &&
+    membership?.schoolId === schoolId &&
+    ['SCHOOL_ADMIN', 'BRANCH_ADMIN'].includes(membership.role) &&
+    (membership.role !== 'BRANCH_ADMIN' || membership.branchId === branchId);
 
   useEffect(() => {
+    if (!authorized) return;
     loadSchool(schoolId).catch(() => undefined);
     loadBranch(schoolId, branchId).catch(() => undefined);
-    loadSessions(schoolId).catch(() => undefined);
-  }, [branchId, loadBranch, loadSchool, loadSessions, schoolId]);
+    return () => {
+      cancelSchool();
+      cancelBranch();
+    };
+  }, [authorized, branchId, cancelBranch, cancelSchool, loadBranch, loadSchool, schoolId]);
 
-  if (isLoading && branch?.id !== branchId) {
-    return <LoadingView message="Loading branch…" />;
-  }
-  if (!branch || branch.id !== branchId || !membership) {
+  if (!validId) return <ErrorState message="This branch reference is invalid." />;
+  if (!authorized) return <ErrorState message="You cannot access this branch." title="Access denied" />;
+  if (isLoading && branch?.id !== branchId) return <LoadingView message="Loading branch…" />;
+  if (!branch || branch.id !== branchId) {
     return (
       <ErrorState
         message={error?.message ?? 'Branch information is unavailable.'}
         onRetry={() => loadBranch(schoolId, branchId)}
+        title={error?.status === 403 ? 'Branch access denied' : error?.status === 404 ? 'Branch not found' : undefined}
       />
     );
   }
 
-  const canEdit = canEditBranch(membership.role, membership, schoolId);
-  const canStatus = canChangeBranchStatus(
-    membership.role,
-    membership,
-    schoolId,
-  );
-  const nextStatus = branch.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
-  const activeSession = sessions.find(session => session.status === 'ACTIVE');
+  const canManage = membership.role === 'SCHOOL_ADMIN' && school?.status !== 'INACTIVE';
+  const inactive = branch.status === 'INACTIVE';
+  const nextStatus = inactive ? 'ACTIVE' : 'INACTIVE';
 
   return (
     <>
       <AppScreen
         contentContainerStyle={styles.screenContent}
-        onRefresh={async () => {
-          await Promise.all([
-            loadBranch(schoolId, branchId),
-            loadSessions(schoolId),
-          ]);
-        }}
+        onRefresh={() => loadBranch(schoolId, branchId)}
         refreshing={isLoading}
         scrollable
         testID="branch-details-screen"
       >
         <View style={styles.maxWidth}>
-          <AppHeader
-            includeSafeArea={false}
-            onBackPress={navigation.goBack}
-            title="Branch Details"
-          />
+          <AppHeader includeSafeArea={false} onBackPress={navigation.goBack} title="Branch Details" />
           <View style={styles.titleRow}>
             <View style={styles.copy}>
               <AppText variant="heading2">{branch.name}</AppText>
-              <AppText color={theme.colors.primary} variant="bodyMedium">
-                {branch.code}
-              </AppText>
+              <AppText color={theme.colors.primary} variant="bodyMedium">{branch.code}</AppText>
             </View>
-            <AppBadge
-              status={branch.status === 'ACTIVE' ? 'active' : 'inactive'}
-            />
+            <AppBadge status={inactive ? 'inactive' : 'active'} />
           </View>
-          {error ? (
-            <InlineError message={error.message} style={styles.notice} />
+          {inactive ? (
+            <InlineError
+              message="This branch is inactive. Django does not globally revoke existing sessions, so the app treats it as unavailable for branch context selection."
+              style={styles.notice}
+            />
           ) : null}
+          {mutationError ? <InlineError message={mutationError.message} style={styles.notice} /> : null}
           <AppCard style={styles.card} variant="outlined">
-            <Detail label="School" value={school?.name ?? '—'} />
-            <Detail label="Mobile" value={branch.mobile} />
-            <Detail label="Email" value={branch.email ?? '—'} />
-            <Detail
-              label="Address"
-              value={`${branch.address.line1}, ${branch.address.city}, ${branch.address.state} ${branch.address.pinCode}`}
-            />
-            <Detail
-              label="Branch Type"
-              value={branch.isMainBranch ? 'Main Branch' : 'Branch'}
-            />
-            <Detail
-              label="Created"
-              value={formatDisplayDate(branch.createdAt)}
-            />
+            <Detail label="School" value={school?.name ?? 'Current school'} />
+            <Detail label="Code" value={branch.code} />
+            <Detail label="Phone" value={maskPhone(branch.phone)} />
+            <Detail label="Email" value={branch.email || '—'} />
+            <Detail label="Address" value={branch.address || '—'} />
+            <Detail label="Created" value={formatDisplayDate(branch.createdAt)} />
           </AppCard>
           <AppCard style={styles.card} variant="outlined">
-            <AppText variant="title">Current academic session</AppText>
-            <AppText
-              color={theme.colors.textSecondary}
-              style={styles.sessionCopy}
-            >
-              {activeSession
-                ? `${activeSession.name} · ${formatDisplayDate(activeSession.startDate)} – ${formatDisplayDate(activeSession.endDate)}`
-                : 'No active academic session'}
+            <AppText variant="title">Backend scope</AppText>
+            <AppText color={theme.colors.textSecondary} style={styles.scopeCopy}>
+              School ownership and branch access are derived from the authenticated user. The route does not select a tenant.
             </AppText>
           </AppCard>
           <View style={styles.actions}>
-            <AppButton
-              fullWidth
-              onPress={() =>
-                navigation.navigate(ROUTES.FEE_SETUP, {
-                  academicSessionId: activeSession?.id,
-                  branchId,
-                  schoolId,
-                  sessionStatus: activeSession?.status,
-                })
-              }
-              title="Fee Setup"
-              variant="outline"
-            />
-            <AppButton
-              fullWidth
-              onPress={() =>
-                navigation.navigate(ROUTES.STUDENTS, { branchId, schoolId })
-              }
-              title="Students"
-              variant="outline"
-            />
-            <AppButton
-              fullWidth
-              onPress={() =>
-                navigation.navigate(ROUTES.ACADEMIC_SETUP, {
-                  academicSessionId: activeSession?.id,
-                  branchId,
-                  schoolId,
-                })
-              }
-              title="Academic Setup"
-              variant="outline"
-            />
-            {membership.role === 'BRANCH_ADMIN' ? (
-              <>
-                <AppButton
-                  fullWidth
-                  onPress={() =>
-                    navigation.navigate(ROUTES.SCHOOL_DETAILS, { schoolId })
-                  }
-                  title="View School Information"
-                  variant="outline"
-                />
-                <AppButton
-                  fullWidth
-                  onPress={() =>
-                    navigation.navigate(ROUTES.STAFF_USERS, { schoolId })
-                  }
-                  title="View Branch Staff"
-                  variant="outline"
-                />
-              </>
-            ) : null}
-            {canEdit ? (
+            {canManage ? (
               <AppButton
                 fullWidth
-                onPress={() =>
-                  navigation.navigate(ROUTES.EDIT_BRANCH, {
-                    branchId,
-                    schoolId,
-                  })
-                }
+                onPress={() => navigation.navigate(ROUTES.EDIT_BRANCH, { branchId, schoolId })}
                 title="Edit Branch"
                 variant="outline"
               />
-            ) : (
-              <AppButton
-                fullWidth
-                onPress={() =>
-                  navigation.navigate(ROUTES.ACADEMIC_SESSIONS, { schoolId })
-                }
-                title="View Active Session"
-                variant="outline"
-              />
-            )}
-            {canStatus ? (
+            ) : null}
+            {canManage ? (
               <AppButton
                 fullWidth
                 onPress={() => setConfirmVisible(true)}
-                title={
-                  nextStatus === 'INACTIVE'
-                    ? 'Deactivate Branch'
-                    : 'Activate Branch'
-                }
+                title={nextStatus === 'INACTIVE' ? 'Deactivate Branch' : 'Activate Branch'}
                 variant={nextStatus === 'INACTIVE' ? 'danger' : 'primary'}
               />
+            ) : null}
+            {inactive && membership.role === 'BRANCH_ADMIN' ? (
+              <AppButton fullWidth onPress={logout} title="Log Out" variant="danger" />
             ) : null}
           </View>
         </View>
@@ -230,15 +144,14 @@ export function BranchDetailsScreen({
         loading={isSaving}
         message={
           nextStatus === 'INACTIVE'
-            ? 'This branch will become unavailable. A school must always keep at least one active branch.'
-            : 'This branch will be restored to active status.'
+            ? `Deactivate ${branch.name}? Django does not enforce a last-active or Main Branch restriction and does not revoke existing JWTs.`
+            : `Activate ${branch.name} for branch selection again?`
         }
         onCancel={() => setConfirmVisible(false)}
         onConfirm={async () => {
-          const updated = await updateStatus(schoolId, branchId, nextStatus);
-          if (updated) setConfirmVisible(false);
+          if (await updateStatus(schoolId, branchId, nextStatus)) setConfirmVisible(false);
         }}
-        title={`${nextStatus === 'INACTIVE' ? 'Deactivate' : 'Activate'} branch?`}
+        title={`${nextStatus === 'INACTIVE' ? 'Deactivate' : 'Activate'} ${branch.name}?`}
         visible={confirmVisible}
       />
     </>
@@ -250,9 +163,7 @@ function Detail({ label, value }: { label: string; value: string }) {
   return (
     <View style={styles.detail}>
       <AppText color={theme.colors.textSecondary}>{label}</AppText>
-      <AppText align="right" style={styles.detailValue} variant="bodyMedium">
-        {value}
-      </AppText>
+      <AppText align="right" style={styles.detailValue} variant="bodyMedium">{value}</AppText>
     </View>
   );
 }
@@ -261,24 +172,11 @@ const styles = StyleSheet.create({
   actions: { gap: 10, marginTop: 24 },
   card: { marginTop: 16 },
   copy: { flex: 1, marginRight: 12 },
-  detail: {
-    alignItems: 'flex-start',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 12,
-  },
+  detail: { alignItems: 'flex-start', flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 },
   detailValue: { flex: 1, marginLeft: 20 },
-  maxWidth: {
-    alignSelf: 'center',
-    maxWidth: 680,
-    width: '100%',
-  },
+  maxWidth: { alignSelf: 'center', maxWidth: 680, width: '100%' },
   notice: { marginTop: 16 },
+  scopeCopy: { marginTop: 8 },
   screenContent: { paddingBottom: 32 },
-  sessionCopy: { marginTop: 8 },
-  titleRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    marginTop: 22,
-  },
+  titleRow: { alignItems: 'center', flexDirection: 'row', marginTop: 22 },
 });

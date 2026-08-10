@@ -53,6 +53,7 @@ export interface ClassSubjectAssignment extends AcademicContext {
   id: ID;
   classId: ID;
   subjectId: ID;
+  teacherId?: ID;
   displayOrder: number;
   status: AcademicEntityStatus;
   createdAt: string;
@@ -121,5 +122,8 @@ export interface SubjectListQuery {
 }
 
 export interface UpdateClassSubjectAssignmentsInput {
-  subjectIds: ID[];
+  // The legacy mock repository uses subjectIds. Live Django assignments are
+  // the confirmed class + subject + teacher relation.
+  subjectIds?: ID[];
+  assignments?: Array<{ subjectId: ID; teacherId: ID }>;
 }

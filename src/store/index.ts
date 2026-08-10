@@ -74,12 +74,33 @@ export {
   type FeeSetupStoreState,
 } from './feeSetup/feeSetupStore';
 export {
+  createCurrentFeeConfigurationStore,
+  currentFeeConfigurationStore,
+  INITIAL_CURRENT_FEE_CONFIGURATION_STATE,
+  useCurrentFeeConfigurationStore,
+  type CurrentFeeConfigurationStoreState,
+} from './feeConfiguration/currentFeeConfigurationStore';
+export {
   createOrganizationStore,
   INITIAL_ORGANIZATION_STATE,
   organizationStore,
   useOrganizationStore,
   type OrganizationStoreState,
 } from './organization/organizationStore';
+export {
+  createCurrentOrganizationStore,
+  currentOrganizationStore,
+  INITIAL_CURRENT_ORGANIZATION_STATE,
+  useCurrentOrganizationStore,
+  type CurrentOrganizationStoreState,
+} from './organization/currentOrganizationStore';
+export {
+  createPlatformStore,
+  INITIAL_PLATFORM_STATE,
+  platformStore,
+  usePlatformStore,
+  type PlatformStoreState,
+} from './platform/platformStore';
 export {
   createStudentStore,
   INITIAL_STUDENT_STATE,
@@ -88,9 +109,23 @@ export {
   type StudentStoreState,
 } from './student/studentStore';
 export {
+  createCurrentStudentStore,
+  currentStudentStore,
+  INITIAL_CURRENT_STUDENT_STATE,
+  useCurrentStudentStore,
+  type CurrentStudentStoreState,
+} from './student/currentStudentStore';
+export {
   createUserManagementStore,
   INITIAL_USER_MANAGEMENT_STATE,
   userManagementStore,
   useUserManagementStore,
   type UserManagementStoreState,
 } from './userManagement/userManagementStore';
+export {
+  createCurrentStaffStore,
+  currentStaffStore,
+  INITIAL_CURRENT_STAFF_STATE,
+  useCurrentStaffStore,
+  type CurrentStaffStoreState,
+} from './userManagement/currentStaffStore';

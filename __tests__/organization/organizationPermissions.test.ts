@@ -29,15 +29,15 @@ function membership(
 }
 
 describe('organization permission guards', () => {
-  it('grants Super Admin platform organization access', () => {
+  it('keeps Super Admin out of the current-school boundary', () => {
     const active = membership('SUPER_ADMIN', undefined);
     expect(canCreateSchool(active.role)).toBe(true);
     expect(canChangeSchoolStatus(active.role)).toBe(true);
-    expect(canViewSchool(active.role, active, 'school-any')).toBe(true);
-    expect(canEditSchool(active.role, active, 'school-any')).toBe(true);
-    expect(canCreateBranch(active.role, active, 'school-any')).toBe(true);
+    expect(canViewSchool(active.role, active, 'school-any')).toBe(false);
+    expect(canEditSchool(active.role, active, 'school-any')).toBe(false);
+    expect(canCreateBranch(active.role, active, 'school-any')).toBe(false);
     expect(canManageAcademicSessions(active.role, active, 'school-any')).toBe(
-      true,
+      false,
     );
   });
 

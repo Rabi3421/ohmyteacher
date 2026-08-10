@@ -5,12 +5,15 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import type { UserMembership } from '../../src/models/auth';
 import type {
+  CurrentSchool,
+  OrganizationBranch,
+} from '../../src/models/currentOrganization';
+import type { LiveStaffUser } from '../../src/models/liveStaff';
+import type {
   Branch,
 } from '../../src/models/organization';
 import type {
   RoleDefinition,
-  StaffUserDetails,
-  StaffUserSummary,
   UserActivity,
   UserSessionSummary,
 } from '../../src/models/userManagement';
@@ -36,6 +39,14 @@ import {
   INITIAL_USER_MANAGEMENT_STATE,
   userManagementStore,
 } from '../../src/store/userManagement/userManagementStore';
+import {
+  currentOrganizationStore,
+  INITIAL_CURRENT_ORGANIZATION_STATE,
+} from '../../src/store/organization/currentOrganizationStore';
+import {
+  currentStaffStore,
+  INITIAL_CURRENT_STAFF_STATE,
+} from '../../src/store/userManagement/currentStaffStore';
 
 jest.mock('react-native-keychain', () => ({
   getAllGenericPasswordServices: jest.fn().mockResolvedValue([]),
@@ -50,6 +61,10 @@ jest.mock('@react-native-community/netinfo', () => ({
     isInternetReachable: true,
     type: 'wifi',
   }),
+}));
+
+jest.mock('../../src/hooks/useDebounce', () => ({
+  useDebounce: (value: unknown) => value,
 }));
 
 const initialMetrics = {
@@ -85,45 +100,44 @@ const BRANCH: Branch = {
   updatedAt: '2026-07-20T10:00:00.000Z',
 };
 
-const SUMMARY: StaffUserSummary = {
-  branches: [{ code: 'MAIN', id: 'branch-main', name: 'Main Branch' }],
-  identity: {
-    createdAt: '2025-04-01T09:00:00.000Z',
-    email: 'vikram@omt.edu.in',
-    id: 'user-accountant',
-    lastLoginAt: '2026-07-20T07:45:00.000Z',
-    mobile: '9876543211',
-    name: 'Vikram Rao',
-    status: 'ACTIVE',
-    updatedAt: '2026-07-20T10:00:00.000Z',
-  },
-  membership: {
-    branchIds: ['branch-main'],
-    createdAt: '2025-04-01T09:00:00.000Z',
-    id: 'membership-accountant',
-    role: 'ACCOUNTANT',
-    schoolId: 'school-omt',
-    status: 'ACTIVE',
-    updatedAt: '2026-07-20T10:00:00.000Z',
-    userId: 'user-accountant',
-  },
+const LIVE_STAFF: LiveStaffUser = {
+  branch: { code: 'SCH11-B1', id: '21', name: 'Main Branch', status: 'ACTIVE' },
+  id: '31',
+  joinedAt: '2025-04-01T09:00:00.000Z',
+  mobile: '+919876543211',
+  name: 'Vikram Rao',
+  role: 'TEACHER',
+  schoolId: '11',
+  status: 'ACTIVE',
 };
 
-const DETAILS: StaffUserDetails = {
-  ...SUMMARY,
-  activeSessionCount: 2,
-  effectiveAccess: {
-    branchIds: ['branch-main'],
-    permissions: [
-      'students.view',
-      'fees.view',
-      'payments.collect',
-      'receipts.view',
-    ],
-    role: 'ACCOUNTANT',
-    scope: 'BRANCH',
-  },
-  schoolName: 'OhMyTeacher Demo School',
+const LIVE_BRANCH: OrganizationBranch = {
+  address: '',
+  code: 'SCH11-B1',
+  createdAt: '2025-04-01T09:00:00.000Z',
+  email: '',
+  id: '21',
+  name: 'Main Branch',
+  phone: '',
+  schoolId: '11',
+  status: 'ACTIVE',
+};
+
+const LIVE_SCHOOL: CurrentSchool = {
+  address: '',
+  createdAt: '2025-04-01T09:00:00.000Z',
+  email: '',
+  id: '11',
+  name: 'OhMyTeacher Demo School',
+  phone: '',
+  status: 'ACTIVE',
+  upiId: '',
+};
+
+const LIVE_SCHOOL_ADMIN: UserMembership = {
+  ...SCHOOL_ADMIN,
+  schoolId: '11',
+  userId: '1',
 };
 
 const ACCOUNTANT_ROLE: RoleDefinition = {
@@ -167,6 +181,16 @@ const originalUserActions = {
 const originalOrganizationActions = {
   loadBranches: organizationStore.getState().loadBranches,
   loadSchool: organizationStore.getState().loadSchool,
+};
+const originalCurrentStaffActions = {
+  cancelDetailRequest: currentStaffStore.getState().cancelDetailRequest,
+  cancelListRequest: currentStaffStore.getState().cancelListRequest,
+  loadStaff: currentStaffStore.getState().loadStaff,
+  loadStaffUser: currentStaffStore.getState().loadStaffUser,
+};
+const originalCurrentOrganizationActions = {
+  loadBranches: currentOrganizationStore.getState().loadBranches,
+  loadCurrentSchool: currentOrganizationStore.getState().loadCurrentSchool,
 };
 
 function withSafeArea(element: React.ReactElement) {
@@ -229,22 +253,35 @@ beforeEach(() => {
     loadBranches: jest.fn().mockResolvedValue(undefined),
     loadSchool: jest.fn().mockResolvedValue(true),
   });
+  currentOrganizationStore.setState({
+    ...INITIAL_CURRENT_ORGANIZATION_STATE,
+    allBranches: [LIVE_BRANCH],
+    branches: { items: [LIVE_BRANCH], pagination: null, totalItems: 1 },
+    currentSchool: LIVE_SCHOOL,
+    loadBranches: jest.fn().mockResolvedValue(true),
+    loadCurrentSchool: jest.fn().mockResolvedValue(true),
+  });
+  currentStaffStore.setState({
+    ...INITIAL_CURRENT_STAFF_STATE,
+    cancelDetailRequest: jest.fn(),
+    cancelListRequest: jest.fn(),
+    loadStaff: jest.fn().mockResolvedValue(true),
+    loadStaffUser: jest.fn().mockResolvedValue(true),
+  });
 });
 
 afterAll(() => {
   userManagementStore.setState(originalUserActions);
   organizationStore.setState(originalOrganizationActions);
+  currentOrganizationStore.setState(originalCurrentOrganizationActions);
+  currentStaffStore.setState(originalCurrentStaffActions);
 });
 
 test('staff list renders', async () => {
-  userManagementStore.setState({
-    staff: {
-      items: [SUMMARY],
-      page: 1,
-      pageSize: 20,
-      totalItems: 1,
-      totalPages: 1,
-    },
+  authStore.setState({ activeMembership: LIVE_SCHOOL_ADMIN, memberships: [LIVE_SCHOOL_ADMIN] });
+  currentStaffStore.setState({
+    allStaff: [LIVE_STAFF],
+    staff: { items: [LIVE_STAFF], pagination: null, totalItems: 1 },
   });
   let renderer: ReactTestRenderer.ReactTestRenderer;
   await ReactTestRenderer.act(async () => {
@@ -255,7 +292,7 @@ test('staff list renders', async () => {
           route={{
             key: 'StaffUsers-test',
             name: 'StaffUsers',
-            params: { schoolId: 'school-omt' },
+            params: { schoolId: '11' },
           }}
         />,
       ),
@@ -263,11 +300,12 @@ test('staff list renders', async () => {
   });
   expect(renderer!.root.findByProps({ testID: 'staff-users-screen' })).toBeTruthy();
   expect(renderText(renderer!)).toContain('Vikram Rao');
-  expect(renderText(renderer!)).toContain('Accountant');
+  expect(renderText(renderer!)).toContain('Teacher');
   await ReactTestRenderer.act(async () => renderer!.unmount());
 });
 
 test('staff empty state renders', async () => {
+  authStore.setState({ activeMembership: LIVE_SCHOOL_ADMIN, memberships: [LIVE_SCHOOL_ADMIN] });
   let renderer: ReactTestRenderer.ReactTestRenderer;
   await ReactTestRenderer.act(async () => {
     renderer = ReactTestRenderer.create(
@@ -277,7 +315,7 @@ test('staff empty state renders', async () => {
           route={{
             key: 'StaffUsers-empty',
             name: 'StaffUsers',
-            params: { schoolId: 'school-omt' },
+            params: { schoolId: '11' },
           }}
         />,
       ),
@@ -288,6 +326,7 @@ test('staff empty state renders', async () => {
 });
 
 test('create staff validates identity and branch scope', async () => {
+  authStore.setState({ activeMembership: LIVE_SCHOOL_ADMIN, memberships: [LIVE_SCHOOL_ADMIN] });
   let renderer: ReactTestRenderer.ReactTestRenderer;
   await ReactTestRenderer.act(async () => {
     renderer = ReactTestRenderer.create(
@@ -297,7 +336,7 @@ test('create staff validates identity and branch scope', async () => {
           route={{
             key: 'CreateStaffUser-test',
             name: 'CreateStaffUser',
-            params: { schoolId: 'school-omt' },
+            params: { schoolId: '11' },
           }}
         />,
       ),
@@ -305,16 +344,17 @@ test('create staff validates identity and branch scope', async () => {
   });
   await ReactTestRenderer.act(async () => {
     renderer!.root
-      .findByProps({ accessibilityLabel: 'Create Staff Membership' })
+      .findByProps({ accessibilityLabel: 'Create Staff Account' })
       .props.onPress();
   });
   expect(renderText(renderer!)).toContain('Full name is required.');
-  expect(renderText(renderer!)).toContain('Select at least one active branch.');
+  expect(renderText(renderer!)).toContain('Select an active branch.');
   await ReactTestRenderer.act(async () => renderer!.unmount());
 });
 
-test('staff user details renders identity, membership, and access', async () => {
-  userManagementStore.setState({ currentStaff: DETAILS });
+test('staff user details renders Django User and server-owned scope', async () => {
+  authStore.setState({ activeMembership: LIVE_SCHOOL_ADMIN, memberships: [LIVE_SCHOOL_ADMIN] });
+  currentStaffStore.setState({ currentStaff: LIVE_STAFF });
   let renderer: ReactTestRenderer.ReactTestRenderer;
   await ReactTestRenderer.act(async () => {
     renderer = ReactTestRenderer.create(
@@ -325,8 +365,8 @@ test('staff user details renders identity, membership, and access', async () => 
             key: 'StaffUserDetails-test',
             name: 'StaffUserDetails',
             params: {
-              membershipId: 'membership-accountant',
-              schoolId: 'school-omt',
+              membershipId: '31',
+              schoolId: '11',
             },
           }}
         />,
@@ -334,13 +374,14 @@ test('staff user details renders identity, membership, and access', async () => 
     );
   });
   expect(renderer!.root.findByProps({ testID: 'staff-user-details-screen' })).toBeTruthy();
-  expect(renderText(renderer!)).toContain('Access summary');
+  expect(renderText(renderer!)).toContain('Django user account');
   expect(renderText(renderer!)).toContain('Main Branch');
   await ReactTestRenderer.act(async () => renderer!.unmount());
 });
 
 test('branch assignment screen renders active branches', async () => {
-  userManagementStore.setState({ currentStaff: DETAILS });
+  authStore.setState({ activeMembership: LIVE_SCHOOL_ADMIN, memberships: [LIVE_SCHOOL_ADMIN] });
+  currentStaffStore.setState({ currentStaff: LIVE_STAFF });
   let renderer: ReactTestRenderer.ReactTestRenderer;
   await ReactTestRenderer.act(async () => {
     renderer = ReactTestRenderer.create(
@@ -351,8 +392,8 @@ test('branch assignment screen renders active branches', async () => {
             key: 'AssignBranches-test',
             name: 'AssignBranches',
             params: {
-              membershipId: 'membership-accountant',
-              schoolId: 'school-omt',
+              membershipId: '31',
+              schoolId: '11',
             },
           }}
         />,

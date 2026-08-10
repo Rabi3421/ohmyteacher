@@ -670,14 +670,15 @@ export const mockAcademicService: AcademicService = {
         409,
       );
     }
-    if (new Set(input.subjectIds).size !== input.subjectIds.length) {
+    const subjectIds = input.subjectIds ?? [];
+    if (new Set(subjectIds).size !== subjectIds.length) {
       error(
         'DUPLICATE_SUBJECT_ASSIGNMENT',
         'Each subject can only be assigned once.',
         409,
       );
     }
-    const selectedSubjects = input.subjectIds.map(subjectId =>
+    const selectedSubjects = subjectIds.map(subjectId =>
       findSubject(context.schoolId, subjectId),
     );
     if (selectedSubjects.some(subject => subject.status !== 'ACTIVE')) {
@@ -689,7 +690,7 @@ export const mockAcademicService: AcademicService = {
     }
 
     const now = new Date().toISOString();
-    const selectedIds = new Set(input.subjectIds);
+    const selectedIds = new Set(subjectIds);
     const existing = assignments.filter(
       item =>
         item.classId === classId &&
@@ -703,7 +704,7 @@ export const mockAcademicService: AcademicService = {
         item.updatedAt = now;
       }
     });
-    input.subjectIds.forEach((subjectId, index) => {
+    subjectIds.forEach((subjectId, index) => {
       const current = existing.find(item => item.subjectId === subjectId);
       if (current) {
         current.displayOrder = index + 1;

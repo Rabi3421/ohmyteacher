@@ -8,65 +8,64 @@ import { AppHeader } from '../../components/common/AppHeader';
 import { AppScreen } from '../../components/common/AppScreen';
 import { AppText } from '../../components/common/AppText';
 import { ConfirmationDialog } from '../../components/feedback/ConfirmationDialog';
+import { ErrorState } from '../../components/feedback/ErrorState';
 import { InlineError } from '../../components/feedback/InlineError';
 import { LoadingView } from '../../components/feedback/LoadingView';
 import { ROUTES } from '../../constants/routes';
 import { useFeeSetupAccess } from '../../hooks/useFeeSetupAccess';
 import type { RoleScreenProps } from '../../navigation/navigationTypes';
-import { useFeeSetupStore } from '../../store';
+import { useCurrentFeeConfigurationStore } from '../../store';
 
-export function FeeHeadDetailsScreen({
-  navigation,
-  route,
-}: RoleScreenProps<'FeeHeadDetails'>) {
-  const current = useFeeSetupStore(state => state.currentFeeHead);
-  const load = useFeeSetupStore(state => state.loadFeeHead);
-  const updateStatus = useFeeSetupStore(state => state.updateFeeHeadStatus);
-  const loading = useFeeSetupStore(state => state.isLoadingFeeHeads || state.isSavingFeeHead);
-  const error = useFeeSetupStore(state => state.error);
-  const [confirming, setConfirming] = useState(false);
+export function FeeHeadDetailsScreen({ navigation, route }: RoleScreenProps<'FeeHeadDetails'>) {
+  const current = useCurrentFeeConfigurationStore(state => state.currentFeeHead);
+  const load = useCurrentFeeConfigurationStore(state => state.loadFeeHead);
+  const setContext = useCurrentFeeConfigurationStore(state => state.setContext);
+  const setStatus = useCurrentFeeConfigurationStore(state => state.setFeeHeadStatus);
+  const loading = useCurrentFeeConfigurationStore(state => state.isLoadingHeads);
+  const saving = useCurrentFeeConfigurationStore(state => state.isSaving);
+  const error = useCurrentFeeConfigurationStore(state => state.error);
   const access = useFeeSetupAccess(route.params.schoolId, route.params.branchId);
-  useEffect(() => { load(route.params.feeHeadId).catch(() => undefined); }, [load, route.params.feeHeadId]);
+  const [confirming, setConfirming] = useState(false);
+
+  useEffect(() => {
+    setContext(route.params, route.params.sessionStatus);
+    load(route.params.feeHeadId).catch(() => undefined);
+  }, [load, route.params, setContext]);
   const head = current?.id === route.params.feeHeadId ? current : null;
+
   return (
     <>
-      <AppScreen scrollable testID="fee-head-details-screen">
+      <AppScreen onRefresh={() => load(route.params.feeHeadId)} refreshing={loading} scrollable testID="fee-head-details-screen">
         <View style={styles.maxWidth}>
           <AppHeader
             includeSafeArea={false}
             onBackPress={navigation.goBack}
-            rightActions={access.canManageHeads ? (
-              <AppButton onPress={() => navigation.navigate(ROUTES.EDIT_FEE_HEAD, route.params)} title="Edit" variant="outline" />
-            ) : null}
+            rightActions={head && access.canManageHeads ? <AppButton onPress={() => navigation.navigate(ROUTES.EDIT_FEE_HEAD, route.params)} title="Edit" variant="outline" /> : null}
             title="Fee Head Details"
           />
-          {!head ? <LoadingView message="Loading Fee Head…" /> : (
-            <AppCard variant="elevated">
+          {!head && loading ? <LoadingView message="Loading live Fee Head…" /> : !head && error ? (
+            <ErrorState message={error.message} onRetry={() => load(route.params.feeHeadId)} />
+          ) : head ? (
+            <AppCard style={styles.card} variant="elevated">
               <View style={styles.row}>
-                <View style={styles.copy}>
-                  <AppText variant="heading2">{head.name}</AppText>
-                  <AppText>{head.code}</AppText>
-                </View>
+                <View style={styles.copy}><AppText variant="heading2">{head.name}</AppText><AppText>School-wide Fee Head</AppText></View>
                 <AppBadge label={head.status} status={head.status === 'ACTIVE' ? 'active' : 'inactive'} />
               </View>
-              <AppText>{head.type.replace('_', ' ')} · {head.defaultFrequency.replace('_', ' ')}</AppText>
-              <AppText>{head.mandatoryByDefault ? 'Mandatory by default' : 'Optional by default'} · {head.refundable ? 'Refundable' : 'Non-refundable'}</AppText>
-              <AppText>{head.activeStructureItemCount} active structure references</AppText>
-              {access.canManageHeads ? (
-                <AppButton onPress={() => setConfirming(true)} title={head.status === 'ACTIVE' ? 'Deactivate' : 'Activate'} variant={head.status === 'ACTIVE' ? 'danger' : 'outline'} />
-              ) : null}
+              <AppText>{head.frequency === 'MONTHLY' ? 'Monthly generation frequency' : 'One-time frequency'}</AppText>
+              <AppText variant="caption">Created {new Date(head.createdAt).toLocaleDateString()}</AppText>
+              {access.canManageHeads ? <AppButton onPress={() => setConfirming(true)} title={head.status === 'ACTIVE' ? 'Deactivate' : 'Activate'} variant={head.status === 'ACTIVE' ? 'danger' : 'outline'} /> : null}
               {error ? <InlineError message={error.message} /> : null}
             </AppCard>
-          )}
+          ) : null}
         </View>
       </AppScreen>
       <ConfirmationDialog
         destructive={head?.status === 'ACTIVE'}
-        loading={loading}
-        message="References and history are preserved. Active references block deactivation."
+        loading={saving}
+        message={head?.status === 'ACTIVE' ? `Deactivate ${head.name}? Existing Class items and generated invoice snapshots remain. New Item forms will exclude this Head.` : `Activate ${head?.name ?? 'this Fee Head'} for new configuration?`}
         onCancel={() => setConfirming(false)}
         onConfirm={async () => {
-          if (head && await updateStatus(head.id, head.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE')) setConfirming(false);
+          if (head && await setStatus(head.id, head.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE')) setConfirming(false);
         }}
         title="Confirm Fee Head status"
         visible={confirming}
@@ -74,4 +73,5 @@ export function FeeHeadDetailsScreen({
     </>
   );
 }
-const styles = StyleSheet.create({ copy: { flex: 1 }, maxWidth: { alignSelf: 'center', maxWidth: 720, width: '100%' }, row: { alignItems: 'center', flexDirection: 'row', gap: 10 } });
+
+const styles = StyleSheet.create({ card: { gap: 12 }, copy: { flex: 1 }, maxWidth: { alignSelf: 'center', maxWidth: 720, width: '100%' }, row: { alignItems: 'center', flexDirection: 'row', gap: 10 } });

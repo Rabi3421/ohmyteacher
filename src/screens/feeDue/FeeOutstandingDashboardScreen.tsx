@@ -13,6 +13,7 @@ import { LoadingView } from '../../components/feedback/LoadingView';
 import { ROUTES } from '../../constants/routes';
 import { useFeeDueAccess } from '../../hooks/useFeeDueAccess';
 import type { RoleScreenProps } from '../../navigation/navigationTypes';
+import { getDownstreamMockAcademicSessions } from '../../services/academic/downstreamMockAcademicIdentity';
 import {
   useAuthStore,
   useFeeDueStore,
@@ -32,12 +33,9 @@ export function FeeOutstandingDashboardScreen({
   const load = useFeeDueStore(state => state.loadOutstanding);
   const school = useOrganizationStore(state => state.currentSchool);
   const branches = useOrganizationStore(state => state.branches.items);
-  const sessions = useOrganizationStore(state => state.academicSessions);
+  const sessions = getDownstreamMockAcademicSessions(route.params.schoolId);
   const loadSchool = useOrganizationStore(state => state.loadSchool);
   const loadBranches = useOrganizationStore(state => state.loadBranches);
-  const loadSessions = useOrganizationStore(
-    state => state.loadAcademicSessions,
-  );
   const [branchId, setBranchId] = useState(
     route.params.branchId ?? membership?.branchId,
   );
@@ -57,9 +55,8 @@ export function FeeOutstandingDashboardScreen({
     Promise.all([
       loadSchool(route.params.schoolId),
       loadBranches(route.params.schoolId),
-      loadSessions(route.params.schoolId),
     ]).catch(() => undefined);
-  }, [loadBranches, loadSchool, loadSessions, route.params.schoolId]);
+  }, [loadBranches, loadSchool, route.params.schoolId]);
 
   useEffect(() => {
     if (!branchId) {
@@ -100,6 +97,13 @@ export function FeeOutstandingDashboardScreen({
     setContext,
   ]);
 
+  if (sessions.length === 0) {
+    return (
+      <AppScreen testID="fee-outstanding-dashboard-screen">
+        <ErrorState message="Fee Dues are still a demo module and have no mock academic identity matching this live school. No live academic IDs were sent to them." title="Demo context unavailable" />
+      </AppScreen>
+    );
+  }
   if (!branch || !session) {
     return (
       <AppScreen testID="fee-outstanding-dashboard-screen">

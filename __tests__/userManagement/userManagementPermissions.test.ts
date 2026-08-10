@@ -27,10 +27,10 @@ function membership(
 }
 
 describe('user-management frontend guards', () => {
-  it('allows Super Admin only valid platform staff role assignment', () => {
+  it('keeps Super Admin outside current-school live staff routes', () => {
     const actor = membership('SUPER_ADMIN');
-    expect(canViewStaff(actor.role, actor, 'school-any')).toBe(true);
-    expect(canCreateStaff(actor.role, actor, 'school-any')).toBe(true);
+    expect(canViewStaff(actor.role, actor, 'school-any')).toBe(false);
+    expect(canCreateStaff(actor.role, actor, 'school-any')).toBe(false);
     expect(canAssignRole(actor.role, 'SCHOOL_ADMIN')).toBe(true);
     expect(canAssignRole(actor.role, 'ACCOUNTANT')).toBe(false);
   });
@@ -41,8 +41,8 @@ describe('user-management frontend guards', () => {
     expect(canCreateStaff(actor.role, actor, 'school-own')).toBe(true);
     expect(canEditStaff(actor.role, actor, 'school-own')).toBe(true);
     expect(canAssignBranches(actor.role, actor, 'school-own')).toBe(true);
-    expect(canRevokeUserSessions(actor.role, actor, 'school-own')).toBe(true);
-    expect(canViewUserActivity(actor.role, actor, 'school-own')).toBe(true);
+    expect(canRevokeUserSessions(actor.role, actor, 'school-own')).toBe(false);
+    expect(canViewUserActivity(actor.role, actor, 'school-own')).toBe(false);
     expect(
       canManageRolePermissions(actor.role, actor, 'school-own'),
     ).toBe(true);
@@ -54,12 +54,12 @@ describe('user-management frontend guards', () => {
     expect(canAssignRole(actor.role, 'SCHOOL_ADMIN')).toBe(false);
   });
 
-  it('allows Branch Admin read-only branch staff access', () => {
+  it('allows Branch Admin scoped Teacher management but no reassignment', () => {
     const actor = membership('BRANCH_ADMIN', 'school-own', 'branch-own');
     expect(canViewStaff(actor.role, actor, 'school-own')).toBe(true);
-    expect(canViewUserActivity(actor.role, actor, 'school-own')).toBe(true);
-    expect(canCreateStaff(actor.role, actor, 'school-own')).toBe(false);
-    expect(canEditStaff(actor.role, actor, 'school-own')).toBe(false);
+    expect(canViewUserActivity(actor.role, actor, 'school-own')).toBe(false);
+    expect(canCreateStaff(actor.role, actor, 'school-own')).toBe(true);
+    expect(canEditStaff(actor.role, actor, 'school-own')).toBe(true);
     expect(canAssignBranches(actor.role, actor, 'school-own')).toBe(false);
     expect(canRevokeUserSessions(actor.role, actor, 'school-own')).toBe(false);
   });

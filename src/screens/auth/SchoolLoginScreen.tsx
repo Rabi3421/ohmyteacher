@@ -6,7 +6,6 @@ import { AppButton } from '../../components/common/AppButton';
 import { AppInput } from '../../components/common/AppInput';
 import { AppText } from '../../components/common/AppText';
 import { InlineError } from '../../components/feedback/InlineError';
-import { AppIcon } from '../../components/icons/AppIcon';
 import { ROUTES } from '../../constants/routes';
 import { useAppTheme } from '../../hooks/useAppTheme';
 import { useNetworkStatus } from '../../hooks/useNetworkStatus';
@@ -14,13 +13,10 @@ import type { AuthScreenProps } from '../../navigation/navigationTypes';
 import { useAuthStore } from '../../store';
 import {
   isIndianMobile,
-  isSchoolCode,
   normalizeIndianMobile,
-  normalizeSchoolCode,
 } from '../../utils/validation';
 
 interface FieldErrors {
-  schoolCode?: string;
   mobile?: string;
 }
 
@@ -33,18 +29,13 @@ export function SchoolLoginScreen({
   const clearError = useAuthStore(state => state.clearError);
   const isLoading = useAuthStore(state => state.isLoading);
   const apiError = useAuthStore(state => state.error);
-  const [schoolCode, setSchoolCode] = useState('');
   const [mobile, setMobile] = useState('');
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const offline = network.isConnected === false;
 
   const handleSubmit = async (): Promise<void> => {
-    const normalizedSchoolCode = normalizeSchoolCode(schoolCode);
     const normalizedMobile = normalizeIndianMobile(mobile);
     const nextErrors: FieldErrors = {};
-    if (!isSchoolCode(normalizedSchoolCode)) {
-      nextErrors.schoolCode = 'Enter a valid school code.';
-    }
     if (!isIndianMobile(normalizedMobile)) {
       nextErrors.mobile = 'Enter a valid 10-digit Indian mobile number.';
     }
@@ -56,7 +47,6 @@ export function SchoolLoginScreen({
 
     const requested = await requestSchoolOtp({
       mobile: normalizedMobile,
-      schoolCode: normalizedSchoolCode,
     });
     if (requested) {
       navigation.navigate(ROUTES.OTP_VERIFICATION);
@@ -79,27 +69,6 @@ export function SchoolLoginScreen({
     >
       <View style={styles.fields}>
         <AppInput
-          autoCapitalize="characters"
-          autoCorrect={false}
-          error={fieldErrors.schoolCode ?? apiError?.fieldErrors?.schoolCode}
-          label="School Code"
-          leftIcon={
-            <AppIcon
-              color={theme.colors.textSecondary}
-              name="school"
-              size={theme.iconSizes.sm}
-            />
-          }
-          maxLength={20}
-          onChangeText={value => {
-            setSchoolCode(normalizeSchoolCode(value));
-            setFieldErrors(current => ({ ...current, schoolCode: undefined }));
-          }}
-          placeholder="e.g. OMT001"
-          required
-          value={schoolCode}
-        />
-        <AppInput
           error={fieldErrors.mobile ?? apiError?.fieldErrors?.mobile}
           keyboardType="phone-pad"
           label="Mobile Number"
@@ -119,7 +88,7 @@ export function SchoolLoginScreen({
           <InlineError message={apiError.message} />
         ) : null}
         <AppButton
-          disabled={offline}
+          disabled={offline || isLoading}
           fullWidth
           loading={isLoading}
           onPress={handleSubmit}

@@ -88,7 +88,7 @@ describe('organization store tenant boundaries', () => {
     );
   });
 
-  it('exposes only the active school session to Branch Admin', async () => {
+  it('exposes the backend-confirmed school session list to Branch Admin', async () => {
     const store = createOrganizationStore({
       getMembership: () => activeMembership('BRANCH_ADMIN', 'branch-main'),
       service: mockOrganizationService,
@@ -99,8 +99,8 @@ describe('organization store tenant boundaries', () => {
     jest.runOnlyPendingTimers();
     await loading;
 
-    expect(store.getState().academicSessions).toHaveLength(1);
-    expect(store.getState().academicSessions[0].status).toBe('ACTIVE');
+    expect(store.getState().academicSessions).toHaveLength(3);
+    expect(store.getState().academicSessions.some(item => item.status === 'ACTIVE')).toBe(true);
     expect(store.getState().isLoadingSessions).toBe(false);
   });
 });

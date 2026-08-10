@@ -131,8 +131,33 @@ export const mockAuthService: AuthService = {
     );
   },
 
+  async resendOtp(phoneNumber): Promise<ApiResponse<OtpRequest>> {
+    await mockDelay();
+    const fixture =
+      SCHOOL_AUTH_FIXTURES[phoneNumber] ??
+      PLATFORM_AUTH_FIXTURES[phoneNumber.toLowerCase()];
+    if (!fixture) {
+      throw new ApiClientError({
+        code: 'USER_NOT_FOUND',
+        message: 'No matching account was found.',
+        status: 404,
+      });
+    }
+    return successful(
+      createOtpRequest(fixture, maskIdentifier(phoneNumber)),
+      'OTP sent successfully.',
+    );
+  },
+
   async verifyOtp(input): Promise<ApiResponse<AuthSession>> {
     await mockDelay();
+    if (!input.requestId) {
+      throw new ApiClientError({
+        code: 'OTP_REQUEST_MISSING',
+        message: 'Return to login and request a new OTP.',
+        status: 400,
+      });
+    }
     const pending = pendingRequests.get(input.requestId);
     if (!pending) {
       throw new ApiClientError({
@@ -175,6 +200,34 @@ export const mockAuthService: AuthService = {
       createFixtureSession(pending.fixture),
       'OTP verified successfully.',
     );
+  },
+
+  async getCurrentUser() {
+    throw new ApiClientError({
+      code: 'MOCK_SESSION_CONTEXT_REQUIRED',
+      message: 'Restore a mock session before reading its profile.',
+    });
+  },
+
+  async updateCurrentUser() {
+    throw new ApiClientError({
+      code: 'MOCK_ONBOARDING_UNAVAILABLE',
+      message: 'Mock onboarding is not available through live auth actions.',
+    });
+  },
+
+  async getCurrentSchool() {
+    throw new ApiClientError({
+      code: 'MOCK_ONBOARDING_UNAVAILABLE',
+      message: 'Mock onboarding is not available through live auth actions.',
+    });
+  },
+
+  async updateCurrentSchool() {
+    throw new ApiClientError({
+      code: 'MOCK_ONBOARDING_UNAVAILABLE',
+      message: 'Mock onboarding is not available through live auth actions.',
+    });
   },
 
   async restoreSession(accessToken): Promise<ApiResponse<AuthSession>> {

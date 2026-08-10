@@ -38,13 +38,13 @@ const managePermissions: PermissionKey[] = [
 ];
 
 describe('academic permission guards', () => {
-  it('grants Super Admin full selected-school context access', () => {
+  it('keeps Super Admin outside school-scoped Django academic endpoints', () => {
     const active = membership('SUPER_ADMIN', undefined);
-    expect(canViewClasses(active, [], 'school-any', 'branch-any')).toBe(true);
+    expect(canViewClasses(active, [], 'school-any', 'branch-any')).toBe(false);
     expect(
       canManageClasses(active, [], 'school-any', 'branch-any', 'ACTIVE'),
-    ).toBe(true);
-    expect(canManageSubjects(active, [], 'school-any')).toBe(true);
+    ).toBe(false);
+    expect(canManageSubjects(active, [], 'school-any')).toBe(false);
   });
 
   it('grants School Admin full access in its own school', () => {
@@ -74,7 +74,7 @@ describe('academic permission guards', () => {
     ).toBe(false);
   });
 
-  it('keeps Branch Admin read-only without manage permissions', () => {
+  it('allows Branch Admin management in its fixed backend branch scope', () => {
     const active = membership('BRANCH_ADMIN', 'school-omt', 'branch-main');
     expect(
       canManageClasses(
@@ -84,7 +84,7 @@ describe('academic permission guards', () => {
         'branch-main',
         'ACTIVE',
       ),
-    ).toBe(false);
+    ).toBe(true);
     expect(
       canManageSections(
         active,
@@ -93,7 +93,7 @@ describe('academic permission guards', () => {
         'branch-main',
         'ACTIVE',
       ),
-    ).toBe(false);
+    ).toBe(true);
   });
 
   it('uses effective Branch Admin manage permissions', () => {
@@ -118,7 +118,7 @@ describe('academic permission guards', () => {
     ).toBe(true);
   });
 
-  it('makes closed sessions read-only for every role', () => {
+  it('keeps legacy mock CLOSED contexts read-only while live sessions expose no CLOSED status', () => {
     const superAdmin = membership('SUPER_ADMIN', undefined);
     const schoolAdmin = membership('SCHOOL_ADMIN');
     expect(

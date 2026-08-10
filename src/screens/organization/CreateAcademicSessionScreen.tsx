@@ -80,7 +80,7 @@ export function CreateAcademicSessionScreen({
             ))}
           </View>
           <AppText style={styles.helper} variant="caption">
-            Making this active will close the school’s current active session.
+            Making this active will deactivate the school’s current active session.
           </AppText>
           {error ? (
             <InlineError message={error.message} style={styles.error} />

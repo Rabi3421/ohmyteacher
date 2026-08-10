@@ -23,6 +23,7 @@ import type {
 } from '../../models/organization';
 import type { ApiError } from '../../services/api/apiError';
 import { ApiClientError } from '../../services/api/apiError';
+import { mapAcademicFieldErrors } from '../../services/academic/academicMapper';
 import {
   organizationService,
 } from '../../services/organization/organizationServiceResolver';
@@ -151,7 +152,7 @@ function normalizeError(error: unknown): ApiError {
   if (error instanceof ApiClientError) {
     return {
       code: error.code,
-      fieldErrors: error.fieldErrors,
+      fieldErrors: mapAcademicFieldErrors(error.fieldErrors),
       message: error.message,
       status: error.status,
     };
@@ -199,6 +200,25 @@ export function createOrganizationStore({
         active.role !== 'SCHOOL_ADMIN'
       ) {
         throw accessError('This workspace has read-only organization access.');
+      }
+      return active;
+    }
+
+    function authorizeSessionRead(schoolId: string): UserMembership {
+      const active = membership();
+      if (
+        active.schoolId !== schoolId ||
+        !['SCHOOL_ADMIN', 'BRANCH_ADMIN'].includes(active.role)
+      ) {
+        throw accessError('You cannot access academic sessions for this school.');
+      }
+      return active;
+    }
+
+    function authorizeSessionManagement(schoolId: string): UserMembership {
+      const active = authorizeSessionRead(schoolId);
+      if (active.role !== 'SCHOOL_ADMIN') {
+        throw accessError('Only School Admin can manage academic sessions.');
       }
       return active;
     }
@@ -442,13 +462,10 @@ export function createOrganizationStore({
       async loadAcademicSessions(schoolId) {
         set({ error: null, isLoadingSessions: true });
         try {
-          const active = authorizeSchool(schoolId);
+          authorizeSessionRead(schoolId);
           const response = await service.getAcademicSessions(schoolId);
           set({
-            academicSessions:
-              active.role === 'BRANCH_ADMIN'
-                ? response.data.filter(item => item.status === 'ACTIVE')
-                : response.data,
+            academicSessions: response.data,
             isLoadingSessions: false,
           });
         } catch (error) {
@@ -459,7 +476,7 @@ export function createOrganizationStore({
       async createAcademicSession(schoolId, input) {
         set({ error: null, isSavingSession: true, successMessage: null });
         try {
-          authorizeManagement(schoolId);
+          authorizeSessionManagement(schoolId);
           const response = await service.createAcademicSession(schoolId, input);
           set(state => ({
             academicSessions: [...state.academicSessions, response.data],
@@ -476,7 +493,7 @@ export function createOrganizationStore({
       async updateAcademicSession(schoolId, sessionId, input) {
         set({ error: null, isSavingSession: true, successMessage: null });
         try {
-          authorizeManagement(schoolId);
+          authorizeSessionManagement(schoolId);
           const response = await service.updateAcademicSession(
             schoolId,
             sessionId,
@@ -499,7 +516,7 @@ export function createOrganizationStore({
       async activateAcademicSession(schoolId, sessionId) {
         set({ error: null, isSavingSession: true, successMessage: null });
         try {
-          authorizeManagement(schoolId);
+          authorizeSessionManagement(schoolId);
           const response = await service.activateAcademicSession(
             schoolId,
             sessionId,
@@ -519,7 +536,7 @@ export function createOrganizationStore({
       async closeAcademicSession(schoolId, sessionId) {
         set({ error: null, isSavingSession: true, successMessage: null });
         try {
-          authorizeManagement(schoolId);
+          authorizeSessionManagement(schoolId);
           const response = await service.closeAcademicSession(
             schoolId,
             sessionId,

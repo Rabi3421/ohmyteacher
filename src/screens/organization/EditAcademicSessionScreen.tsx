@@ -56,15 +56,6 @@ export function EditAcademicSessionScreen({
   if (isLoading && !session) {
     return <LoadingView message="Preparing academic session…" />;
   }
-  if (session && session.status !== 'UPCOMING') {
-    return (
-      <ErrorState
-        message="Only upcoming academic sessions can be edited."
-        onRetry={navigation.goBack}
-        retryLabel="Go Back"
-      />
-    );
-  }
   if (!session || !form) {
     return (
       <ErrorState

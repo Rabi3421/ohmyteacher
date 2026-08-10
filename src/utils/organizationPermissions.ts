@@ -8,7 +8,10 @@ export function canViewSchool(
   membership: UserMembership,
   schoolId: string,
 ): boolean {
-  return role === 'SUPER_ADMIN' || membership.schoolId === schoolId;
+  return (
+    ['SCHOOL_ADMIN', 'BRANCH_ADMIN'].includes(role) &&
+    membership.schoolId === schoolId
+  );
 }
 
 export function canCreateSchool(role: AppRole): boolean {
@@ -21,8 +24,7 @@ export function canEditSchool(
   schoolId: string,
 ): boolean {
   return (
-    role === 'SUPER_ADMIN' ||
-    (role === 'SCHOOL_ADMIN' && membership.schoolId === schoolId)
+    role === 'SCHOOL_ADMIN' && membership.schoolId === schoolId
   );
 }
 
@@ -36,8 +38,7 @@ export function canCreateBranch(
   schoolId: string,
 ): boolean {
   return (
-    role === 'SUPER_ADMIN' ||
-    (role === 'SCHOOL_ADMIN' && membership.schoolId === schoolId)
+    role === 'SCHOOL_ADMIN' && membership.schoolId === schoolId
   );
 }
 
@@ -50,9 +51,7 @@ export function canViewBranch(
   schoolId: string,
   branchId: string,
 ): boolean {
-  if (role === 'SUPER_ADMIN') {
-    return true;
-  }
+  if (!['SCHOOL_ADMIN', 'BRANCH_ADMIN'].includes(role)) return false;
   if (membership.schoolId !== schoolId) {
     return false;
   }
@@ -65,8 +64,7 @@ export function canManageAcademicSessions(
   schoolId: string,
 ): boolean {
   return (
-    role === 'SUPER_ADMIN' ||
-    (role === 'SCHOOL_ADMIN' && membership.schoolId === schoolId)
+    role === 'SCHOOL_ADMIN' && membership.schoolId === schoolId
   );
 }
 

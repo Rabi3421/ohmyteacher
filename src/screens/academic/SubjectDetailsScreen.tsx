@@ -80,10 +80,7 @@ export function SubjectDetailsScreen({
                 <View style={styles.row}>
                   <View style={styles.copy}>
                     <AppText variant="heading2">{item.name}</AppText>
-                    <AppText color={theme.colors.primary}>
-                      {item.code}
-                      {item.shortName ? ` · ${item.shortName}` : ''}
-                    </AppText>
+                    {item.code ? <AppText color={theme.colors.primary}>{item.code}</AppText> : null}
                   </View>
                   <AppBadge
                     status={
@@ -92,8 +89,6 @@ export function SubjectDetailsScreen({
                   />
                 </View>
                 <View style={styles.facts}>
-                  <AppText>Type: {item.type}</AppText>
-                  <AppText>Display order: {item.displayOrder}</AppText>
                   <AppText>
                     Active class assignments: {item.activeAssignmentCount}
                   </AppText>
@@ -101,7 +96,7 @@ export function SubjectDetailsScreen({
                     color={theme.colors.textTertiary}
                     variant="caption"
                   >
-                    Updated {formatDateTime(item.updatedAt)}
+                    Created {formatDateTime(item.createdAt)}
                   </AppText>
                 </View>
               </AppCard>
@@ -128,7 +123,7 @@ export function SubjectDetailsScreen({
         confirmLabel="Deactivate"
         destructive
         loading={isSaving}
-        message="This is allowed only after all active class assignments are removed."
+        message="Existing teacher assignments are retained. This subject will be unavailable for new assignment selection until reactivated."
         onCancel={() => setConfirmDeactivate(false)}
         onConfirm={async () => {
           if (await updateStatus(schoolId, subjectId, 'INACTIVE')) {

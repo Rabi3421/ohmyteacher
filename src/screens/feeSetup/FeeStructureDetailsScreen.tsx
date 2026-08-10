@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
+
 import { AppBadge } from '../../components/common/AppBadge';
 import { AppButton } from '../../components/common/AppButton';
 import { AppCard } from '../../components/common/AppCard';
@@ -8,70 +9,140 @@ import { AppInput } from '../../components/common/AppInput';
 import { AppScreen } from '../../components/common/AppScreen';
 import { AppText } from '../../components/common/AppText';
 import { ConfirmationDialog } from '../../components/feedback/ConfirmationDialog';
+import { EmptyState } from '../../components/feedback/EmptyState';
+import { ErrorState } from '../../components/feedback/ErrorState';
 import { InlineError } from '../../components/feedback/InlineError';
 import { LoadingView } from '../../components/feedback/LoadingView';
 import { ROUTES } from '../../constants/routes';
 import { useFeeSetupAccess } from '../../hooks/useFeeSetupAccess';
 import type { RoleScreenProps } from '../../navigation/navigationTypes';
-import { useFeeSetupStore } from '../../store';
-import { formatCurrency } from '../../utils/currency';
+import { useCurrentFeeConfigurationStore } from '../../store';
+import { feePaiseToDto, formatFeePaise, parseFeeAmountInput } from '../../utils/feeMoney';
+
+interface ItemEdit {
+  id: string;
+  amount: string;
+  mandatory: boolean;
+  originalAmountPaise: number;
+  originalMandatory: boolean;
+}
 
 export function FeeStructureDetailsScreen({ navigation, route }: RoleScreenProps<'FeeStructureDetails'>) {
-  const current = useFeeSetupStore(state => state.currentFeeStructure);
-  const load = useFeeSetupStore(state => state.loadStructure);
-  const fineRules = useFeeSetupStore(state => state.fineRules.items);
-  const loadFineRules = useFeeSetupStore(state => state.loadFineRules);
-  const copy = useFeeSetupStore(state => state.copyStructure);
-  const updateStatus = useFeeSetupStore(state => state.updateStructureStatus);
-  const error = useFeeSetupStore(state => state.error);
-  const saving = useFeeSetupStore(state => state.isSavingStructure || state.isCopyingStructure);
+  const current = useCurrentFeeConfigurationStore(state => state.currentStructure);
+  const heads = useCurrentFeeConfigurationStore(state => state.feeHeads);
+  const load = useCurrentFeeConfigurationStore(state => state.loadStructure);
+  const loadHeads = useCurrentFeeConfigurationStore(state => state.loadFeeHeads);
+  const update = useCurrentFeeConfigurationStore(state => state.updateStructureItem);
+  const setContext = useCurrentFeeConfigurationStore(state => state.setContext);
+  const loading = useCurrentFeeConfigurationStore(state => state.isLoadingStructures);
+  const saving = useCurrentFeeConfigurationStore(state => state.isSaving);
+  const error = useCurrentFeeConfigurationStore(state => state.error);
   const access = useFeeSetupAccess(route.params.schoolId, route.params.branchId);
-  const [pending, setPending] = useState<'ACTIVATE' | 'DEACTIVATE' | 'COPY' | null>(null);
-  const [copyClassId, setCopyClassId] = useState('');
-  const [copyBranchId, setCopyBranchId] = useState(route.params.branchId);
-  const [copySessionId, setCopySessionId] = useState(route.params.academicSessionId);
+  const [editing, setEditing] = useState<ItemEdit | null>(null);
+  const [pending, setPending] = useState<ItemEdit | null>(null);
+  const [amountError, setAmountError] = useState<string>();
+
   useEffect(() => {
-    load(route.params.feeStructureId).catch(() => undefined);
-    loadFineRules().catch(() => undefined);
-  }, [load, loadFineRules, route.params.feeStructureId]);
-  const item = current?.id === route.params.feeStructureId ? current : null;
-  const selectedPeriodTotal = item?.items
-    .filter(feeItem => feeItem.status === 'ACTIVE')
-    .reduce((sum, feeItem) => {
-      const periods =
-        feeItem.frequency === 'MONTHLY'
-          ? feeItem.applicableMonths?.length ?? 0
-          : feeItem.frequency === 'QUARTERLY'
-            ? feeItem.installmentCount ?? 4
-            : feeItem.frequency === 'HALF_YEARLY'
-              ? feeItem.installmentCount ?? 2
-              : feeItem.installmentCount ?? 1;
-      return sum + feeItem.amount * periods;
-    }, 0) ?? 0;
+    setContext(route.params, route.params.sessionStatus);
+    Promise.all([load(route.params.feeStructureId), loadHeads()]).catch(() => undefined);
+  }, [load, loadHeads, route.params, setContext]);
+  const structure = current?.classId === route.params.feeStructureId ? current : null;
+
+  function requestSave(value: ItemEdit) {
+    try {
+      parseFeeAmountInput(value.amount);
+      setAmountError(undefined);
+      setPending(value);
+    } catch (failure) {
+      setAmountError(failure instanceof Error ? failure.message : 'Enter a valid amount.');
+    }
+  }
+
   return (
     <>
-      <AppScreen scrollable testID="fee-structure-details-screen"><View style={styles.maxWidth}>
-        <AppHeader includeSafeArea={false} onBackPress={navigation.goBack} title="Fee Structure Details" />
-        {!item ? <LoadingView message="Loading Fee Structure…" /> : <View style={styles.sections}>
-          <AppCard variant="elevated"><View style={styles.row}><View style={styles.copy}><AppText variant="heading2">{item.name}</AppText><AppText>{item.branchName} · {item.academicSessionName} · {item.className}</AppText></View><AppBadge label={item.status} status={item.status === 'ACTIVE' ? 'active' : item.status === 'DRAFT' ? 'draft' : 'inactive'} /></View><AppText>Effective {item.effectiveFrom} · {item.assignedStudentCount} assigned students</AppText></AppCard>
-          <AppText variant="heading3">Fee Items</AppText>
-          {item.items.map(feeItem => <AppCard key={feeItem.id} variant="outlined"><View style={styles.row}><View style={styles.copy}><AppText variant="title">{feeItem.feeHeadName}</AppText><AppText>{formatCurrency(feeItem.amount)} · {feeItem.frequency.replace('_',' ')}</AppText><AppText variant="caption">{feeItem.applicability.replace('_',' ')} · {feeItem.mandatory ? 'Mandatory' : 'Optional'}</AppText><AppText variant="caption">{feeItem.dueRule.type === 'FIXED_DATE' ? `Due ${feeItem.dueRule.date}` : `Due day ${feeItem.dueRule.day}`}{feeItem.fineRuleId ? ` · Fine Rule ${fineRules.find(rule => rule.id === feeItem.fineRuleId)?.name ?? feeItem.fineRuleId}` : ''}</AppText></View><AppBadge label={feeItem.status} status={feeItem.status === 'ACTIVE' ? 'active' : 'inactive'} /></View></AppCard>)}
-          <AppCard variant="outlined"><AppText variant="title">Summary</AppText><AppText>Nominal item total: {formatCurrency(item.totalNominalAmount)}</AppText><AppText>Nominal monthly amount: {formatCurrency(item.items.filter(x => x.frequency === 'MONTHLY').reduce((s,x) => s+x.amount,0))}</AppText><AppText>One-time amount: {formatCurrency(item.items.filter(x => x.frequency === 'ONE_TIME').reduce((s,x) => s+x.amount,0))}</AppText><AppText>Optional amount: {formatCurrency(item.items.filter(x => !x.mandatory).reduce((s,x) => s+x.amount,0))}</AppText><AppText>Total selected-period amount: {formatCurrency(selectedPeriodTotal)}</AppText><AppText>Assigned students: {item.assignedStudentCount}</AppText></AppCard>
-          <View style={styles.actions}>
-            <AppButton onPress={() => navigation.navigate(ROUTES.FEE_STRUCTURE_PREVIEW, route.params)} title="Preview" variant="outline" />
-            <AppButton onPress={() => navigation.navigate(ROUTES.STUDENT_FEE_ASSIGNMENTS, { ...route.params, classId: item.classId, feeStructureId: item.id })} title="Student Assignments" variant="outline" />
-            {access.canManageStructures ? <>
-              <AppButton onPress={() => navigation.navigate(ROUTES.EDIT_FEE_STRUCTURE, route.params)} title="Edit" variant="outline" />
-              <AppButton onPress={() => setPending('COPY')} title="Copy" variant="outline" />
-              {item.status === 'DRAFT' ? <AppButton onPress={() => setPending('ACTIVATE')} title="Activate" /> : item.status === 'ACTIVE' ? <AppButton onPress={() => setPending('DEACTIVATE')} title="Deactivate" variant="danger" /> : null}
-            </> : null}
-          </View>
-          {pending === 'COPY' ? <AppCard variant="outlined"><AppText variant="title">Copy Fee Structure</AppText><AppInput label="Target Branch ID" onChangeText={setCopyBranchId} value={copyBranchId} /><AppInput label="Target Academic Session ID" onChangeText={setCopySessionId} value={copySessionId} /><AppInput label="Target Class ID" onChangeText={setCopyClassId} value={copyClassId} /><AppButton loading={saving} onPress={async () => { const result = await copy({ effectiveFrom: item.effectiveFrom, name: `${item.name} Copy`, sourceFeeStructureId: item.id, targetAcademicSessionId: copySessionId, targetBranchId: copyBranchId, targetClassId: copyClassId }); if (result) setPending(null); }} title="Create Draft Copy" /></AppCard> : null}
-          {error ? <InlineError message={error.message} /> : null}
-        </View>}
-      </View></AppScreen>
-      <ConfirmationDialog destructive={pending === 'DEACTIVATE'} loading={saving} message={pending === 'ACTIVATE' ? 'Activation validates every item and explicitly replaces a conflicting active structure for the same period.' : 'Historical structures and assignments remain preserved.'} onCancel={() => setPending(null)} onConfirm={async () => { if (!item || pending === 'COPY') return; const activating = pending === 'ACTIVATE'; const ok = await updateStatus(item.id, activating ? 'ACTIVE' : 'INACTIVE', activating); if (ok) setPending(null); }} title={pending === 'ACTIVATE' ? 'Activate Fee Structure?' : 'Deactivate Fee Structure?'} visible={pending === 'ACTIVATE' || pending === 'DEACTIVATE'} />
+      <AppScreen onRefresh={() => load(route.params.feeStructureId)} refreshing={loading} scrollable testID="fee-structure-details-screen">
+        <View style={styles.maxWidth}>
+          <AppHeader
+            includeSafeArea={false}
+            onBackPress={navigation.goBack}
+            rightActions={structure && access.canManageStructures && structure.classStatus === 'ACTIVE' ? <AppButton onPress={() => navigation.navigate(ROUTES.CREATE_FEE_STRUCTURE, route.params)} title="Add Item" /> : null}
+            subtitle="Class ID is the stable blueprint identity"
+            title="Class Fee Blueprint"
+          />
+          {!structure && loading ? <LoadingView message="Loading live Structure Items…" /> : !structure && error ? (
+            <ErrorState message={error.message} onRetry={() => load(route.params.feeStructureId)} />
+          ) : structure ? (
+            <View style={styles.sections}>
+              <AppCard style={styles.card} variant="elevated">
+                <View style={styles.row}>
+                  <View style={styles.copy}><AppText variant="heading2">{structure.className}</AppText><AppText>{structure.items.length} Structure Items</AppText></View>
+                  <AppBadge label={structure.classStatus} status={structure.classStatus === 'ACTIVE' ? 'active' : 'inactive'} />
+                </View>
+                <AppText variant="title">Configured total {formatFeePaise(structure.totalPaise)}</AppText>
+                <AppText variant="caption">This is a configuration sum, not a Student outstanding balance.</AppText>
+              </AppCard>
+              {structure.items.length === 0 ? (
+                <EmptyState actionLabel={access.canManageStructures ? 'Add first Item' : undefined} description="Django has no exposed standalone Structure record. Posting the first Item creates its hidden one-to-one Class parent." onAction={access.canManageStructures ? () => navigation.navigate(ROUTES.CREATE_FEE_STRUCTURE, route.params) : undefined} title="No Structure Items" />
+              ) : structure.items.map(item => {
+                const head = heads.find(candidate => candidate.id === item.feeHeadId);
+                const value = editing?.id === item.id ? editing : null;
+                return (
+                  <AppCard key={item.id} style={styles.card} variant="outlined">
+                    <View style={styles.row}>
+                      <View style={styles.copy}>
+                        <AppText variant="title">{head?.name ?? `Fee Head ${item.feeHeadId}`}</AppText>
+                        <AppText>{formatFeePaise(item.amountPaise)} · {item.mandatory ? 'Mandatory' : 'Optional'}</AppText>
+                        <AppText variant="caption">{head ? (head.frequency === 'MONTHLY' ? 'Monthly' : 'One-time') : 'Historical/inactive Head reference'}</AppText>
+                      </View>
+                      {head ? <AppBadge label={head.status} status={head.status === 'ACTIVE' ? 'active' : 'inactive'} /> : null}
+                    </View>
+                    {value ? (
+                      <View style={styles.editor}>
+                        <AppInput error={amountError ?? error?.fieldErrors?.amount} keyboardType="decimal-pad" label="Amount (INR)" onChangeText={amount => { setEditing({ ...value, amount }); setAmountError(undefined); }} value={value.amount} />
+                        <View style={styles.actions}>
+                          <AppButton onPress={() => setEditing({ ...value, mandatory: true })} title="Mandatory" variant={value.mandatory ? 'primary' : 'outline'} />
+                          <AppButton onPress={() => setEditing({ ...value, mandatory: false })} title="Optional" variant={!value.mandatory ? 'primary' : 'outline'} />
+                        </View>
+                        <View style={styles.actions}>
+                          <AppButton onPress={() => { setEditing(null); setAmountError(undefined); }} title="Cancel" variant="ghost" />
+                          <AppButton onPress={() => requestSave(value)} title="Review Changes" />
+                        </View>
+                      </View>
+                    ) : access.canManageStructures && structure.classStatus === 'ACTIVE' ? (
+                      <AppButton onPress={() => { setEditing({ amount: feePaiseToDto(item.amountPaise), id: item.id, mandatory: item.mandatory, originalAmountPaise: item.amountPaise, originalMandatory: item.mandatory }); setAmountError(undefined); }} title="Edit Amount / Mandatory" variant="outline" />
+                    ) : null}
+                  </AppCard>
+                );
+              })}
+              {error ? <InlineError message={error.message} /> : null}
+              <AppCard style={styles.card} variant="outlined">
+                <AppText variant="title">Lifecycle and dependency boundary</AppText>
+                <AppText>Django exposes no Structure activation, deactivation, copy, preview, schedule, or status fields. Item deletion is intentionally unavailable here; existing invoices retain amount snapshots, but destructive configuration changes require a later policy decision.</AppText>
+              </AppCard>
+            </View>
+          ) : null}
+        </View>
+      </AppScreen>
+      <ConfirmationDialog
+        loading={saving}
+        message={pending ? `Update this Structure Item to ${pending.amount} INR and mark it ${pending.mandatory ? 'mandatory' : 'optional'}? Existing generated invoice snapshots are unchanged.` : ''}
+        onCancel={() => setPending(null)}
+        onConfirm={async () => {
+          if (!pending) return;
+          const amountPaise = parseFeeAmountInput(pending.amount);
+          const changes: { amountPaise?: number; mandatory?: boolean } = {};
+          if (amountPaise !== pending.originalAmountPaise) changes.amountPaise = amountPaise;
+          if (pending.mandatory !== pending.originalMandatory) changes.mandatory = pending.mandatory;
+          if (Object.keys(changes).length === 0 || await update(pending.id, changes)) {
+            setPending(null);
+            setEditing(null);
+          }
+        }}
+        title="Confirm Structure Item update"
+        visible={Boolean(pending)}
+      />
     </>
   );
 }
-const styles = StyleSheet.create({ actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 }, copy: { flex: 1 }, maxWidth: { alignSelf: 'center', maxWidth: 780, width: '100%' }, row: { alignItems: 'center', flexDirection: 'row', gap: 10 }, sections: { gap: 13 } });
+
+const styles = StyleSheet.create({ actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 }, card: { gap: 10 }, copy: { flex: 1 }, editor: { gap: 10 }, maxWidth: { alignSelf: 'center', maxWidth: 780, width: '100%' }, row: { alignItems: 'center', flexDirection: 'row', gap: 10 }, sections: { gap: 13 } });

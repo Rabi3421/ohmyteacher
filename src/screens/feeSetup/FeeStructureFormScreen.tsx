@@ -15,6 +15,7 @@ import { FeeStructureItemEditor } from '../../components/feeSetup/FeeFormFields'
 import { FeeContextBar } from '../../components/feeSetup/FeeComponents';
 import type { FeeStructureItemInput } from '../../models/fee';
 import type { RoleStackParamList } from '../../navigation/navigationTypes';
+import { getDownstreamMockAcademicSessions } from '../../services/academic/downstreamMockAcademicIdentity';
 import { useFeeSetupStore, useOrganizationStore } from '../../store';
 import { formatCurrency } from '../../utils/currency';
 import {
@@ -34,7 +35,7 @@ export function FeeStructureFormScreen({
   const heads = useFeeSetupStore(state => state.feeHeads.items);
   const fineRules = useFeeSetupStore(state => state.fineRules.items);
   const context = useFeeSetupStore(state => state.context);
-  const sessions = useOrganizationStore(state => state.academicSessions);
+  const sessions = getDownstreamMockAcademicSessions(context?.schoolId ?? '');
   const branches = useOrganizationStore(state => state.branches.items);
   const school = useOrganizationStore(state => state.currentSchool);
   const current = useFeeSetupStore(state => state.currentFeeStructure);

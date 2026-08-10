@@ -1,31 +1,27 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { AppButton } from '../../components/common/AppButton';
 import { AppCard } from '../../components/common/AppCard';
 import { AppHeader } from '../../components/common/AppHeader';
+import { AppInput } from '../../components/common/AppInput';
 import { AppScreen } from '../../components/common/AppScreen';
 import { AppText } from '../../components/common/AppText';
 import { InlineError } from '../../components/feedback/InlineError';
-import { BranchAssignmentPicker } from '../../components/userManagement/BranchAssignmentPicker';
-import { StaffIdentityFormFields } from '../../components/userManagement/StaffIdentityFormFields';
 import { ROUTES } from '../../constants/routes';
-import type {
-  CreateStaffMembershipInput,
-  MembershipStatus,
-  StaffRole,
-  UpdateUserIdentityInput,
-} from '../../models/userManagement';
+import type { BackendStaffRole } from '../../models/liveStaff';
 import type { RoleScreenProps } from '../../navigation/navigationTypes';
 import {
   useAuthStore,
-  useOrganizationStore,
-  useUserManagementStore,
+  useCurrentOrganizationStore,
+  useCurrentStaffStore,
 } from '../../store';
-import { getRoleLabel } from '../../utils/role';
-import { isEmail, isIndianMobile, isRequired } from '../../utils/validation';
-
-type FormErrors = Record<string, string>;
+import { getBackendStaffRoleLabel } from '../../utils/role';
+import {
+  isIndianMobile,
+  isRequired,
+  normalizeIndianMobile,
+} from '../../utils/validation';
 
 export function CreateStaffUserScreen({
   navigation,
@@ -33,187 +29,131 @@ export function CreateStaffUserScreen({
 }: RoleScreenProps<'CreateStaffUser'>) {
   const schoolId = route.params.schoolId;
   const actor = useAuthStore(state => state.activeMembership);
-  const branches = useOrganizationStore(state => state.branches.items);
-  const loadBranches = useOrganizationStore(state => state.loadBranches);
-  const school = useOrganizationStore(state => state.currentSchool);
-  const loadSchool = useOrganizationStore(state => state.loadSchool);
-  const foundIdentity = useUserManagementStore(state => state.foundIdentity);
-  const findIdentity = useUserManagementStore(state => state.findIdentity);
-  const createStaff = useUserManagementStore(state => state.createStaff);
-  const isSearching = useUserManagementStore(
-    state => state.isSearchingIdentity,
+  const branches = useCurrentOrganizationStore(state => state.branches.items);
+  const loadBranches = useCurrentOrganizationStore(state => state.loadBranches);
+  const school = useCurrentOrganizationStore(state => state.currentSchool);
+  const loadSchool = useCurrentOrganizationStore(state => state.loadCurrentSchool);
+  const createStaff = useCurrentStaffStore(state => state.createStaff);
+  const isCreating = useCurrentStaffStore(state => state.isCreating);
+  const error = useCurrentStaffStore(state => state.error);
+  const [name, setName] = useState('');
+  const [mobile, setMobile] = useState('');
+  const [role, setRole] = useState<BackendStaffRole>(
+    actor?.role === 'BRANCH_ADMIN' ? 'TEACHER' : 'BRANCH_ADMIN',
   );
-  const isCreating = useUserManagementStore(state => state.isCreatingStaff);
-  const error = useUserManagementStore(state => state.error);
-  const [identity, setIdentity] = useState<UpdateUserIdentityInput>({
-    email: '',
-    mobile: '',
-    name: '',
-  });
-  const [role, setRole] = useState<StaffRole>(
-    actor?.role === 'SUPER_ADMIN' ? 'SCHOOL_ADMIN' : 'BRANCH_ADMIN',
+  const [branchId, setBranchId] = useState(actor?.branchId ?? '');
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const activeBranches = useMemo(
+    () => branches.filter(branch => branch.status === 'ACTIVE'),
+    [branches],
   );
-  const [branchIds, setBranchIds] = useState<string[]>([]);
-  const [status, setStatus] = useState<MembershipStatus>('ACTIVE');
-  const [errors, setErrors] = useState<FormErrors>({});
 
   useEffect(() => {
     loadBranches(schoolId).catch(() => undefined);
-    if (school?.id !== schoolId) {
-      loadSchool(schoolId).catch(() => undefined);
-    }
-  }, [loadBranches, loadSchool, school?.id, schoolId]);
+    loadSchool(schoolId).catch(() => undefined);
+  }, [loadBranches, loadSchool, schoolId]);
 
   useEffect(() => {
-    if (foundIdentity?.mobile === identity.mobile) {
-      setIdentity(current => ({
-        email: foundIdentity.email ?? current.email,
-        mobile: foundIdentity.mobile,
-        name: foundIdentity.name,
-      }));
+    if (actor?.role === 'BRANCH_ADMIN' && actor.branchId) {
+      setBranchId(actor.branchId);
+      setRole('TEACHER');
     }
-  }, [foundIdentity, identity.mobile]);
-
-  const roles: StaffRole[] =
-    actor?.role === 'SUPER_ADMIN'
-      ? ['SCHOOL_ADMIN']
-      : ['BRANCH_ADMIN', 'ACCOUNTANT', 'RECEPTIONIST'];
-
-  const validate = (): FormErrors => {
-    const validation: FormErrors = {};
-    if (!isRequired(identity.name)) validation.name = 'Full name is required.';
-    if (!isIndianMobile(identity.mobile)) {
-      validation.mobile = 'Enter a valid 10-digit Indian mobile number.';
-    }
-    if (identity.email && !isEmail(identity.email)) {
-      validation.email = 'Enter a valid email.';
-    }
-    if (role !== 'SCHOOL_ADMIN' && branchIds.length === 0) {
-      validation.branchIds = 'Select at least one active branch.';
-    }
-    return validation;
-  };
+  }, [actor]);
 
   const submit = async (): Promise<void> => {
-    const validation = validate();
+    const validation: Record<string, string> = {};
+    if (!isRequired(name)) validation.name = 'Full name is required.';
+    if (!isIndianMobile(mobile)) {
+      validation.mobile = 'Enter a valid 10-digit Indian mobile number.';
+    }
+    if (!branchId) validation.branchId = 'Select an active branch.';
     setErrors(validation);
     if (Object.keys(validation).length > 0 || isCreating) return;
-    const input: CreateStaffMembershipInput = {
-      branchIds: role === 'SCHOOL_ADMIN' ? [] : branchIds,
-      identity,
+
+    const created = await createStaff(schoolId, {
+      branchId,
+      mobile,
+      name,
       role,
-      status,
-    };
-    const created = await createStaff(schoolId, input);
+    });
     if (created) {
       navigation.replace(ROUTES.STAFF_USER_DETAILS, {
-        membershipId: created.membership.id,
+        membershipId: created.id,
         schoolId,
       });
     }
   };
 
+  const fieldErrors = { ...errors, ...error?.fieldErrors };
+  const roleOptions: BackendStaffRole[] =
+    actor?.role === 'BRANCH_ADMIN' ? ['TEACHER'] : ['BRANCH_ADMIN', 'TEACHER'];
+
   return (
-    <AppScreen
-      contentContainerStyle={styles.screenContent}
-      scrollable
-      testID="create-staff-user-screen"
-    >
+    <AppScreen contentContainerStyle={styles.screenContent} scrollable testID="create-staff-user-screen">
       <View style={styles.maxWidth}>
-        <AppHeader
-          includeSafeArea={false}
-          onBackPress={navigation.goBack}
-          title="Add Staff User"
-        />
+        <AppHeader includeSafeArea={false} onBackPress={navigation.goBack} title="Add Staff User" />
         <AppCard style={styles.schoolContext} variant="outlined">
-          <AppText variant="label">SELECTED SCHOOL</AppText>
-          <AppText variant="title">
-            {school?.id === schoolId ? school.name : schoolId}
-          </AppText>
-          {school?.id === schoolId ? (
-            <AppText variant="caption">{school.code}</AppText>
-          ) : null}
+          <AppText variant="label">CURRENT SCHOOL</AppText>
+          <AppText variant="title">{school?.id === schoolId ? school.name : 'Current school'}</AppText>
+          <AppText variant="caption">School ownership is assigned by Django.</AppText>
         </AppCard>
         <AppCard style={styles.card} variant="elevated">
-          <StaffIdentityFormFields
-            errors={errors}
-            onChange={setIdentity}
-            value={identity}
+          <AppInput
+            error={fieldErrors.name}
+            label="Full Name"
+            onChangeText={setName}
+            required
+            value={name}
           />
-          <AppButton
-            disabled={!isIndianMobile(identity.mobile)}
-            fullWidth
-            loading={isSearching}
-            onPress={() => findIdentity(identity.mobile)}
-            style={styles.section}
-            title="Check Existing User"
-            variant="outline"
+          <AppInput
+            error={fieldErrors.mobile}
+            helperText="The staff member signs in later using OTP. No OTP is sent now."
+            keyboardType="phone-pad"
+            label="Mobile Number"
+            maxLength={10}
+            onChangeText={value => setMobile(normalizeIndianMobile(value))}
+            required
+            value={mobile}
           />
-          {foundIdentity?.mobile === identity.mobile ? (
-            <AppCard style={styles.identityNotice} variant="outlined">
-              <AppText variant="title">Existing identity found</AppText>
-              <AppText>
-                {foundIdentity.name} · {foundIdentity.mobile}
-              </AppText>
-              <AppText variant="caption">
-                A new school membership will reuse this global identity.
-              </AppText>
-            </AppCard>
-          ) : null}
-          <AppText style={styles.section} variant="heading3">
-            Role
-          </AppText>
+          <AppText style={styles.section} variant="heading3">Fixed backend role</AppText>
           <View style={styles.options}>
-            {roles.map(option => (
+            {roleOptions.map(option => (
               <AppButton
                 key={option}
-                onPress={() => {
-                  setRole(option);
-                  if (option === 'SCHOOL_ADMIN') setBranchIds([]);
-                }}
-                title={getRoleLabel(option)}
+                onPress={() => setRole(option)}
+                title={getBackendStaffRoleLabel(option)}
                 variant={role === option ? 'primary' : 'outline'}
               />
             ))}
           </View>
-          {role !== 'SCHOOL_ADMIN' ? (
-            <View style={styles.section}>
-              <BranchAssignmentPicker
-                branches={branches}
-                error={errors.branchIds}
-                onChange={setBranchIds}
-                selectedIds={branchIds}
-              />
-            </View>
-          ) : (
-            <AppText style={styles.helper} variant="caption">
-              School Admin automatically receives school-wide branch scope.
-            </AppText>
-          )}
-          <AppText style={styles.section} variant="heading3">
-            Membership status
+          <AppText style={styles.section} variant="heading3">Assigned branch</AppText>
+          <AppText style={styles.helper} variant="caption">
+            Django supports one branch per staff account.
           </AppText>
           <View style={styles.options}>
-            {(['ACTIVE', 'INACTIVE'] as const).map(option => (
+            {activeBranches.map(branch => (
               <AppButton
-                key={option}
-                onPress={() => setStatus(option)}
-                title={
-                  option[0] + option.slice(1).toLowerCase()
-                }
-                variant={status === option ? 'primary' : 'outline'}
+                disabled={actor?.role === 'BRANCH_ADMIN'}
+                key={branch.id}
+                onPress={() => setBranchId(branch.id)}
+                title={`${branchId === branch.id ? '✓ ' : ''}${branch.name}`}
+                variant={branchId === branch.id ? 'primary' : 'outline'}
               />
             ))}
           </View>
-          {error ? (
-            <InlineError message={error.message} style={styles.error} />
+          {fieldErrors.branchId ? <AppText style={styles.fieldError}>{fieldErrors.branchId}</AppText> : null}
+          {activeBranches.length === 0 ? (
+            <InlineError message="No active accessible branch is available." style={styles.error} />
           ) : null}
+          {error ? <InlineError message={error.message} style={styles.error} /> : null}
           <AppButton
+            disabled={activeBranches.length === 0}
             fullWidth
             loading={isCreating}
             onPress={submit}
             style={styles.submit}
-            title="Create Staff Membership"
+            title="Create Staff Account"
           />
         </AppCard>
       </View>
@@ -222,23 +162,14 @@ export function CreateStaffUserScreen({
 }
 
 const styles = StyleSheet.create({
-  card: { marginTop: 20 },
-  error: { marginTop: 16 },
-  helper: { marginTop: 12 },
-  identityNotice: { marginTop: 14 },
-  maxWidth: {
-    alignSelf: 'center',
-    maxWidth: 680,
-    width: '100%',
-  },
-  options: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginTop: 10,
-  },
-  screenContent: { paddingBottom: 32 },
+  card: { gap: 14, marginTop: 20 },
+  error: { marginTop: 8 },
+  fieldError: { marginTop: 8 },
+  helper: { marginTop: 4 },
+  maxWidth: { alignSelf: 'center', maxWidth: 680, width: '100%' },
+  options: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 10 },
   schoolContext: { marginTop: 16 },
-  section: { marginTop: 22 },
-  submit: { marginTop: 24 },
+  screenContent: { paddingBottom: 32 },
+  section: { marginTop: 12 },
+  submit: { marginTop: 16 },
 });

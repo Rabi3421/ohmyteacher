@@ -11,11 +11,17 @@ import type {
   School,
   SchoolSettings,
 } from '../../src/models/organization';
+import type {
+  CurrentSchool,
+  OrganizationBranch,
+} from '../../src/models/currentOrganization';
 import type { RoleStackParamList } from '../../src/navigation/navigationTypes';
 import { AcademicSessionsScreen } from '../../src/screens/organization/AcademicSessionsScreen';
 import { CreateSchoolScreen } from '../../src/screens/organization/CreateSchoolScreen';
 import { OrganizationSetupSuccessScreen } from '../../src/screens/organization/OrganizationSetupSuccessScreen';
 import { SchoolBranchesScreen } from '../../src/screens/organization/SchoolBranchesScreen';
+import { BranchDetailsScreen } from '../../src/screens/organization/BranchDetailsScreen';
+import { CreateBranchScreen } from '../../src/screens/organization/CreateBranchScreen';
 import { SchoolDetailsScreen } from '../../src/screens/organization/SchoolDetailsScreen';
 import { SchoolSettingsScreen } from '../../src/screens/organization/SchoolSettingsScreen';
 import { SuperAdminSchoolsScreen } from '../../src/screens/organization/SuperAdminSchoolsScreen';
@@ -27,6 +33,10 @@ import {
   INITIAL_ORGANIZATION_STATE,
   organizationStore,
 } from '../../src/store/organization/organizationStore';
+import {
+  currentOrganizationStore,
+  INITIAL_CURRENT_ORGANIZATION_STATE,
+} from '../../src/store/organization/currentOrganizationStore';
 
 jest.mock('react-native-keychain', () => ({
   getAllGenericPasswordServices: jest.fn().mockResolvedValue([]),
@@ -93,6 +103,29 @@ const BRANCH: Branch = {
   updatedAt: SCHOOL.updatedAt,
 };
 
+const CURRENT_SCHOOL: CurrentSchool = {
+  address: '1 Education Road, Bhubaneswar, Odisha 751001',
+  createdAt: SCHOOL.createdAt,
+  email: SCHOOL.email!,
+  id: SCHOOL.id,
+  name: SCHOOL.name,
+  phone: SCHOOL.mobile,
+  status: 'ACTIVE',
+  upiId: '',
+};
+
+const CURRENT_BRANCH: OrganizationBranch = {
+  address: CURRENT_SCHOOL.address,
+  code: 'SCH1-MAIN',
+  createdAt: SCHOOL.createdAt,
+  email: CURRENT_SCHOOL.email,
+  id: BRANCH.id,
+  name: BRANCH.name,
+  phone: CURRENT_SCHOOL.phone,
+  schoolId: SCHOOL.id,
+  status: 'ACTIVE',
+};
+
 const SESSION: AcademicSession = {
   createdAt: SCHOOL.createdAt,
   endDate: '2027-03-31',
@@ -132,12 +165,38 @@ const SCHOOL_MEMBERSHIP: UserMembership = {
   userId: 'user-school-admin',
 };
 
+const LIVE_SCHOOL_MEMBERSHIP: UserMembership = {
+  ...SCHOOL_MEMBERSHIP,
+  schoolId: '11',
+};
+
+const LIVE_BRANCH_MEMBERSHIP: UserMembership = {
+  branchId: '21',
+  id: 'membership-branch-admin-live',
+  role: 'BRANCH_ADMIN',
+  schoolId: '11',
+  status: 'ACTIVE',
+  userId: 'user-branch-admin-live',
+};
+
+const LIVE_SCHOOL: CurrentSchool = { ...CURRENT_SCHOOL, id: '11' };
+const LIVE_BRANCH: OrganizationBranch = {
+  ...CURRENT_BRANCH,
+  id: '21',
+  name: 'Assigned Branch',
+  schoolId: '11',
+};
+
 const originalLoadActions = {
   loadAcademicSessions: organizationStore.getState().loadAcademicSessions,
   loadBranches: organizationStore.getState().loadBranches,
   loadSchool: organizationStore.getState().loadSchool,
   loadSchools: organizationStore.getState().loadSchools,
   loadSchoolSettings: organizationStore.getState().loadSchoolSettings,
+};
+const originalCurrentOrganizationActions = {
+  loadBranches: currentOrganizationStore.getState().loadBranches,
+  loadCurrentSchool: currentOrganizationStore.getState().loadCurrentSchool,
 };
 
 function withSafeArea(element: React.ReactElement) {
@@ -185,10 +244,16 @@ beforeEach(() => {
     loadSchools: jest.fn().mockResolvedValue(undefined),
     loadSchoolSettings: jest.fn().mockResolvedValue(undefined),
   });
+  currentOrganizationStore.setState({
+    ...INITIAL_CURRENT_ORGANIZATION_STATE,
+    loadBranches: jest.fn().mockResolvedValue(true),
+    loadCurrentSchool: jest.fn().mockResolvedValue(true),
+  });
 });
 
 afterAll(() => {
   organizationStore.setState(originalLoadActions);
+  currentOrganizationStore.setState(originalCurrentOrganizationActions);
 });
 
 test('school list renders organization data', async () => {
@@ -271,8 +336,18 @@ test('school details renders overview and organization summary', async () => {
     user: { id: 'user-school-admin', name: 'Ananya', status: 'ACTIVE' },
   });
   organizationStore.setState({
-    currentSchool: SCHOOL,
     loadSchool: jest.fn().mockResolvedValue(true),
+  });
+  currentOrganizationStore.setState({
+    allBranches: [CURRENT_BRANCH],
+    branches: {
+      items: [CURRENT_BRANCH],
+      pagination: null,
+      totalItems: 1,
+    },
+    currentSchool: CURRENT_SCHOOL,
+    loadBranches: jest.fn().mockResolvedValue(true),
+    loadCurrentSchool: jest.fn().mockResolvedValue(true),
   });
   let renderer: ReactTestRenderer.ReactTestRenderer;
 
@@ -294,8 +369,8 @@ test('school details renders overview and organization summary', async () => {
   expect(
     renderer!.root.findByProps({ testID: 'school-details-screen' }),
   ).toBeTruthy();
-  expect(renderText(renderer!)).toContain('Organization summary');
-  expect(renderText(renderer!)).toContain('Ananya Sharma');
+  expect(renderText(renderer!)).toContain('Live branch summary');
+  expect(renderText(renderer!)).toContain('Current authenticated school');
   await ReactTestRenderer.act(async () => renderer!.unmount());
 });
 
@@ -305,15 +380,14 @@ test('branch list renders branch records', async () => {
     memberships: [SCHOOL_MEMBERSHIP],
     user: { id: 'user-school-admin', name: 'Ananya', status: 'ACTIVE' },
   });
-  organizationStore.setState({
+  currentOrganizationStore.setState({
     branches: {
-      items: [BRANCH],
-      page: 1,
-      pageSize: 20,
+      items: [CURRENT_BRANCH],
+      pagination: null,
       totalItems: 1,
-      totalPages: 1,
     },
-    loadBranches: jest.fn().mockResolvedValue(undefined),
+    allBranches: [CURRENT_BRANCH],
+    loadBranches: jest.fn().mockResolvedValue(true),
   });
   let renderer: ReactTestRenderer.ReactTestRenderer;
 
@@ -334,6 +408,102 @@ test('branch list renders branch records', async () => {
 
   expect(renderer!.root.findByProps({ testID: 'branches-screen' })).toBeTruthy();
   expect(renderText(renderer!)).toContain('Main Branch');
+  await ReactTestRenderer.act(async () => renderer!.unmount());
+});
+
+test('branch creation validates confirmed required fields without requesting a code', async () => {
+  authStore.setState({
+    activeMembership: LIVE_SCHOOL_MEMBERSHIP,
+    memberships: [LIVE_SCHOOL_MEMBERSHIP],
+    user: { id: 'user-school-admin', name: 'Ananya', status: 'ACTIVE' },
+  });
+  currentOrganizationStore.setState({
+    createBranch: jest.fn().mockResolvedValue(null),
+    currentSchool: LIVE_SCHOOL,
+    loadCurrentSchool: jest.fn().mockResolvedValue(true),
+  });
+  let renderer: ReactTestRenderer.ReactTestRenderer;
+  await ReactTestRenderer.act(async () => {
+    renderer = ReactTestRenderer.create(
+      withSafeArea(
+        <CreateBranchScreen
+          navigation={makeNavigation<'CreateBranch'>()}
+          route={{
+            key: 'CreateBranch-live',
+            name: 'CreateBranch',
+            params: { schoolId: '11' },
+          }}
+        />,
+      ),
+    );
+  });
+  await ReactTestRenderer.act(async () => {
+    renderer!.root.findByProps({ accessibilityLabel: 'Create Branch' }).props.onPress();
+  });
+  expect(renderText(renderer!)).toContain('Name is required.');
+  expect(renderText(renderer!)).toContain('Django assigns the school and generates the branch code.');
+  expect(() => renderer!.root.findByProps({ accessibilityLabel: 'Branch Code' })).toThrow();
+  await ReactTestRenderer.act(async () => renderer!.unmount());
+});
+
+test('Branch Admin cannot deep-link to another branch', async () => {
+  authStore.setState({
+    activeMembership: LIVE_BRANCH_MEMBERSHIP,
+    memberships: [LIVE_BRANCH_MEMBERSHIP],
+    user: { id: 'user-branch-admin-live', name: 'Branch Admin', status: 'ACTIVE' },
+  });
+  const loadBranch = jest.fn().mockResolvedValue(false);
+  currentOrganizationStore.setState({ loadBranch });
+  let renderer: ReactTestRenderer.ReactTestRenderer;
+  await ReactTestRenderer.act(async () => {
+    renderer = ReactTestRenderer.create(
+      withSafeArea(
+        <BranchDetailsScreen
+          navigation={makeNavigation<'BranchDetails'>()}
+          route={{
+            key: 'BranchDetails-denied',
+            name: 'BranchDetails',
+            params: { branchId: '22', schoolId: '11' },
+          }}
+        />,
+      ),
+    );
+  });
+  expect(renderText(renderer!)).toContain('You cannot access this branch.');
+  expect(loadBranch).not.toHaveBeenCalled();
+  await ReactTestRenderer.act(async () => renderer!.unmount());
+});
+
+test('live branch detail does not fabricate Main Branch or academic data', async () => {
+  authStore.setState({
+    activeMembership: LIVE_SCHOOL_MEMBERSHIP,
+    memberships: [LIVE_SCHOOL_MEMBERSHIP],
+    user: { id: 'user-school-admin', name: 'Ananya', status: 'ACTIVE' },
+  });
+  currentOrganizationStore.setState({
+    currentBranch: LIVE_BRANCH,
+    currentSchool: LIVE_SCHOOL,
+    loadBranch: jest.fn().mockResolvedValue(true),
+    loadCurrentSchool: jest.fn().mockResolvedValue(true),
+  });
+  let renderer: ReactTestRenderer.ReactTestRenderer;
+  await ReactTestRenderer.act(async () => {
+    renderer = ReactTestRenderer.create(
+      withSafeArea(
+        <BranchDetailsScreen
+          navigation={makeNavigation<'BranchDetails'>()}
+          route={{
+            key: 'BranchDetails-live',
+            name: 'BranchDetails',
+            params: { branchId: '21', schoolId: '11' },
+          }}
+        />,
+      ),
+    );
+  });
+  expect(renderText(renderer!)).toContain('Backend scope');
+  expect(renderText(renderer!)).not.toContain('Current academic session');
+  expect(renderText(renderer!)).not.toContain('Main Branch');
   await ReactTestRenderer.act(async () => renderer!.unmount());
 });
 

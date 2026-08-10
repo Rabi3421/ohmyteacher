@@ -1,241 +1,91 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
+import { AcademicContextBar } from '../../components/academic/AcademicContextBar';
 import { AppButton } from '../../components/common/AppButton';
 import { AppCard } from '../../components/common/AppCard';
 import { AppHeader } from '../../components/common/AppHeader';
+import { AppInput } from '../../components/common/AppInput';
 import { AppScreen } from '../../components/common/AppScreen';
 import { AppText } from '../../components/common/AppText';
-import {
-  AdmissionStepIndicator,
-  GuardianCard,
-} from '../../components/student/StudentComponents';
-import {
-  EnrollmentFormFields,
-  GuardianFormFields,
-  StudentProfileFormFields,
-} from '../../components/student/StudentFormFields';
-import { ROUTES } from '../../constants/routes';
-import type { GuardianInput } from '../../models/student';
+import { InlineError } from '../../components/feedback/InlineError';
+import { maskStudentPhone } from '../../components/student/CurrentStudentComponents';
+import type { CurrentStudentAdmissionInput } from '../../models/currentStudent';
 import type { RoleScreenProps } from '../../navigation/navigationTypes';
-import { useStudentStore } from '../../store';
-import {
-  type StudentFormErrors,
-  validateGuardianInput,
-  validateStudentProfileInput,
-} from '../../utils/studentValidation';
+import { useAcademicStore, useCurrentStudentStore } from '../../store';
 
-const guardianInitial: GuardianInput = {
-  address: {
-    city: '',
-    country: 'India',
-    line1: '',
-    pinCode: '',
-    state: '',
-  },
-  fullName: '',
-  isEmergencyContact: true,
-  isFeeContact: true,
-  isPrimaryContact: true,
-  mobile: '',
-  parentAppAccessEnabled: true,
-  relationship: 'FATHER',
-  whatsappEnabled: true,
+const initialValue: CurrentStudentAdmissionInput = {
+  address: '', classId: '', dateOfBirth: null, gender: '', name: '', parentEmail: '', parentName: '', parentPhoneNumber: '', rollNumber: '', sectionId: '',
 };
 
-export function CreateStudentScreen({
-  navigation,
-  route,
-}: RoleScreenProps<'CreateStudent'>) {
-  const draft = useStudentStore(state => state.admissionDraft);
-  const updateDraft = useStudentStore(state => state.updateAdmissionDraft);
-  const setStep = useStudentStore(state => state.setAdmissionStep);
-  const resetDraft = useStudentStore(state => state.resetAdmissionDraft);
-  const [guardian, setGuardian] = useState(guardianInitial);
-  const [errors, setErrors] = useState<StudentFormErrors>({});
-
-  function next() {
-    if (draft.step === 1) {
-      const nextErrors = validateStudentProfileInput(draft.profile);
-      setErrors(nextErrors);
-      if (Object.keys(nextErrors).length) return;
-      setStep(2);
-      return;
-    }
-    if (draft.step === 2) {
-      if (draft.guardians.length === 0) {
-        const nextErrors = validateGuardianInput(guardian);
-        setErrors(nextErrors);
-        if (Object.keys(nextErrors).length) return;
-        updateDraft({ guardians: [guardian] });
-      }
-      setStep(3);
-      return;
-    }
-    if (draft.step === 3) {
-      const nextErrors: StudentFormErrors = {};
-      if (!draft.enrollment.branchId) nextErrors.branchId = 'Branch is required.';
-      if (!draft.enrollment.academicSessionId) {
-        nextErrors.academicSessionId = 'Academic session is required.';
-      }
-      if (!draft.enrollment.classId) nextErrors.classId = 'Class is required.';
-      if (!draft.enrollment.sectionId) {
-        nextErrors.sectionId = 'Section is required.';
-      }
-      setErrors(nextErrors);
-      if (Object.keys(nextErrors).length) return;
-      setStep(4);
-      return;
-    }
-    navigation.navigate(ROUTES.STUDENT_ADMISSION_REVIEW, {
-      schoolId: route.params.schoolId,
-    });
-  }
-
-  return (
-    <AppScreen
-      contentContainerStyle={styles.content}
-      scrollable
-      testID="create-student-screen"
-    >
-      <View style={styles.maxWidth}>
-        <AppHeader
-          includeSafeArea={false}
-          onBackPress={() => {
-            if (draft.step > 1) setStep((draft.step - 1) as typeof draft.step);
-            else {
-              resetDraft();
-              navigation.goBack();
-            }
-          }}
-          subtitle="Admission draft remains local until submission"
-          title="Student Admission"
-        />
-        <AdmissionStepIndicator step={draft.step} />
-        {draft.step === 1 ? (
-          <StudentProfileFormFields
-            errors={errors}
-            onChange={profile => updateDraft({ profile })}
-            value={draft.profile}
-          />
-        ) : draft.step === 2 ? (
-          <View style={styles.fields}>
-            {draft.guardians.map((item, index) => (
-              <AppCard key={`${item.mobile}-${index}`} variant="outlined">
-                <AppText variant="title">{item.fullName}</AppText>
-                <AppText>{item.relationship} · {item.mobile}</AppText>
-                <AppButton
-                  onPress={() =>
-                    updateDraft({
-                      guardians: draft.guardians.filter((_, i) => i !== index),
-                    })
-                  }
-                  title="Remove Unsaved Guardian"
-                  variant="ghost"
-                />
-              </AppCard>
-            ))}
-            <GuardianFormFields
-              errors={errors}
-              onChange={setGuardian}
-              value={guardian}
-            />
-            <AppButton
-              onPress={() => {
-                const nextErrors = validateGuardianInput(guardian);
-                setErrors(nextErrors);
-                if (Object.keys(nextErrors).length) return;
-                const normalized = {
-                  ...guardian,
-                  isFeeContact: draft.guardians.length
-                    ? guardian.isFeeContact
-                    : true,
-                  isPrimaryContact: draft.guardians.length
-                    ? guardian.isPrimaryContact
-                    : true,
-                };
-                updateDraft({ guardians: [...draft.guardians, normalized] });
-                setGuardian({
-                  ...guardianInitial,
-                  isFeeContact: false,
-                  isPrimaryContact: false,
-                });
-              }}
-              title="Add Guardian"
-              variant="outline"
-            />
-          </View>
-        ) : draft.step === 3 ? (
-          <EnrollmentFormFields
-            errors={errors}
-            onChange={enrollment => updateDraft({ enrollment })}
-            value={draft.enrollment}
-          />
-        ) : (
-          <View style={styles.fields}>
-            <AppText variant="heading3">App Access</AppText>
-            {draft.guardians.map(item => (
-              <GuardianCard
-                guardian={{
-                  ...item,
-                  createdAt: '',
-                  id: item.mobile,
-                  link: {
-                    createdAt: '',
-                    guardianId: item.mobile,
-                    id: item.mobile,
-                    isEmergencyContact: item.isEmergencyContact,
-                    isFeeContact: item.isFeeContact,
-                    isPrimaryContact: item.isPrimaryContact,
-                    parentAppAccessEnabled: item.parentAppAccessEnabled,
-                    status: 'ACTIVE',
-                    studentId: '',
-                    updatedAt: '',
-                    whatsappEnabled: item.whatsappEnabled,
-                  },
-                  linkedChildrenCount: 0,
-                  schoolId: route.params.schoolId,
-                  updatedAt: '',
-                }}
-                key={item.mobile}
-              />
-            ))}
-            <AppButton
-              disabled={!draft.profile.mobile}
-              onPress={() =>
-                updateDraft({
-                  enableStudentAppAccess: !draft.enableStudentAppAccess,
-                })
-              }
-              title={
-                draft.enableStudentAppAccess
-                  ? 'Student App Enabled'
-                  : 'Enable Student App'
-              }
-              variant={
-                draft.enableStudentAppAccess ? 'primary' : 'outline'
-              }
-            />
-            {!draft.profile.mobile ? (
-              <AppText variant="caption">
-                Student access requires a unique personal mobile.
-              </AppText>
-            ) : null}
-          </View>
-        )}
-        <AppButton
-          onPress={next}
-          style={styles.next}
-          title={draft.step === 4 ? 'Review Admission' : 'Continue'}
-        />
-      </View>
-    </AppScreen>
-  );
+function validDate(value: string | null | undefined): boolean {
+  return !value || /^\d{4}-\d{2}-\d{2}$/.test(value);
 }
 
-const styles = StyleSheet.create({
-  content: { paddingBottom: 32 },
-  fields: { gap: 14 },
-  maxWidth: { alignSelf: 'center', maxWidth: 720, width: '100%' },
-  next: { marginTop: 22 },
-});
+export function CreateStudentScreen({ navigation, route }: RoleScreenProps<'CreateStudent'>) {
+  const [value, setValue] = useState(initialValue);
+  const [reviewing, setReviewing] = useState(false);
+  const [validation, setValidation] = useState<string | null>(null);
+  const context = useAcademicStore(state => state.context);
+  const classes = useAcademicStore(state => state.classes.items);
+  const sections = useAcademicStore(state => state.sections.items);
+  const loadClasses = useAcademicStore(state => state.loadClasses);
+  const loadSections = useAcademicStore(state => state.loadSections);
+  const setClassQuery = useAcademicStore(state => state.setClassQuery);
+  const setSectionQuery = useAcademicStore(state => state.setSectionQuery);
+  const create = useCurrentStudentStore(state => state.createAdmission);
+  const saving = useCurrentStudentStore(state => state.isSaving);
+  const error = useCurrentStudentStore(state => state.error);
+
+  useEffect(() => {
+    if (!context || context.schoolId !== route.params.schoolId) return;
+    setValue(current => ({ ...current, classId: '', sectionId: '' }));
+    setClassQuery({ page: 1, pageSize: 100, status: 'ACTIVE' });
+    loadClasses().catch(() => undefined);
+  }, [context, loadClasses, route.params.schoolId, setClassQuery]);
+
+  useEffect(() => {
+    if (!value.classId) return;
+    setSectionQuery({ page: 1, pageSize: 100, status: 'ACTIVE' });
+    loadSections(value.classId).catch(() => undefined);
+  }, [loadSections, setSectionQuery, value.classId]);
+
+  const validate = () => {
+    if (!context) return 'Select a branch and academic session.';
+    if (!value.classId || !value.sectionId) return 'Select an active class and section.';
+    if (!value.name.trim()) return 'Student name is required.';
+    if (!validDate(value.dateOfBirth)) return 'Date of birth must use YYYY-MM-DD.';
+    if (!/^\d{10,15}$/.test(value.parentPhoneNumber.replace(/\D/g, ''))) return 'Enter a valid 10–15 digit parent login phone.';
+    if (value.parentEmail && !/^\S+@\S+\.\S+$/.test(value.parentEmail)) return 'Enter a valid parent email or leave it blank.';
+    return null;
+  };
+
+  return <AppScreen contentContainerStyle={styles.content} scrollable testID="create-student-screen"><View style={styles.maxWidth}>
+    <AppHeader includeSafeArea={false} onBackPress={() => { setValue(initialValue); navigation.goBack(); }} subtitle="One atomic student + parent-login link operation" title="Admit Student" />
+    <AcademicContextBar schoolId={route.params.schoolId} />
+    {!reviewing ? <View style={styles.fields}>
+      <AppText variant="label">Active Class</AppText>
+      <View style={styles.options}>{classes.filter(item => item.status === 'ACTIVE').map(item => <AppButton key={item.id} onPress={() => setValue(current => ({ ...current, classId: item.id, sectionId: '' }))} title={item.name} variant={value.classId === item.id ? 'primary' : 'outline'} />)}</View>
+      <AppText variant="label">Active Section</AppText>
+      <View style={styles.options}>{sections.filter(item => item.classId === value.classId && item.status === 'ACTIVE').map(item => <AppButton key={item.id} onPress={() => setValue(current => ({ ...current, sectionId: item.id }))} title={item.name} variant={value.sectionId === item.id ? 'primary' : 'outline'} />)}</View>
+      <AppInput disabled={saving} error={error?.fieldErrors?.name} label="Student Name" onChangeText={name => setValue({ ...value, name })} required value={value.name} />
+      <AppInput disabled={saving} error={error?.fieldErrors?.dateOfBirth} helperText="YYYY-MM-DD or blank" label="Date of Birth" onChangeText={dateOfBirth => setValue({ ...value, dateOfBirth: dateOfBirth || null })} value={value.dateOfBirth ?? ''} />
+      <AppInput disabled={saving} error={error?.fieldErrors?.gender} helperText="The backend stores free text" label="Gender" onChangeText={gender => setValue({ ...value, gender })} value={value.gender ?? ''} />
+      <AppInput disabled={saving} error={error?.fieldErrors?.rollNumber} label="Roll Number" onChangeText={rollNumber => setValue({ ...value, rollNumber })} value={value.rollNumber ?? ''} />
+      <AppInput disabled={saving} error={error?.fieldErrors?.parentName} label="Parent Name" onChangeText={parentName => setValue({ ...value, parentName })} value={value.parentName ?? ''} />
+      <AppInput disabled={saving} error={error?.fieldErrors?.parentPhoneNumber} helperText="Creates or reuses the backend student-role parent login" keyboardType="phone-pad" label="Parent Login Phone" onChangeText={parentPhoneNumber => setValue({ ...value, parentPhoneNumber })} required value={value.parentPhoneNumber} />
+      <AppInput autoCapitalize="none" disabled={saving} error={error?.fieldErrors?.parentEmail} keyboardType="email-address" label="Parent Email" onChangeText={parentEmail => setValue({ ...value, parentEmail })} value={value.parentEmail ?? ''} />
+      <AppInput disabled={saving} error={error?.fieldErrors?.address} label="Address" onChangeText={address => setValue({ ...value, address })} value={value.address ?? ''} />
+      {validation ? <InlineError message={validation} /> : null}
+      {error ? <InlineError message={error.message} /> : null}
+      <AppButton onPress={() => { const next = validate(); setValidation(next); if (!next) setReviewing(true); }} title="Review Admission" />
+    </View> : <View style={styles.fields}>
+      <AppCard variant="elevated"><AppText variant="title">Review atomic admission</AppText><AppText>{value.name}</AppText><AppText>Branch {context?.branchId} · Session {context?.academicSessionId}</AppText><AppText>Class {value.classId} · Section {value.sectionId} · Roll {value.rollNumber || 'not assigned'}</AppText><AppText>Parent login: {value.parentName || 'Name not recorded'} · {maskStudentPhone(value.parentPhoneNumber)}</AppText></AppCard>
+      <AppCard variant="outlined"><AppText>The server will generate the admission number and admission date, create the student, create or reuse the phone account, and create the StudentLink in one transaction. No OTP is sent by this request.</AppText></AppCard>
+      {error ? <InlineError message={error.message} /> : null}
+      <View style={styles.options}><AppButton disabled={saving} onPress={() => setReviewing(false)} title="Back to Edit" variant="outline" /><AppButton loading={saving} onPress={async () => { const created = await create(value); if (created) { setValue(initialValue); setReviewing(false); navigation.replace('StudentDetails', { schoolId: route.params.schoolId, studentId: created.id }); } }} title="Confirm Admission" /></View>
+    </View>}
+  </View></AppScreen>;
+}
+
+const styles = StyleSheet.create({ content: { paddingBottom: 32 }, fields: { gap: 14 }, maxWidth: { alignSelf: 'center', maxWidth: 720, width: '100%' }, options: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 } });

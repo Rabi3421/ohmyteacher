@@ -8,6 +8,7 @@ import type {
   RoleStackParamList,
 } from '../../src/navigation/navigationTypes';
 import { OtpVerificationScreen } from '../../src/screens/auth/OtpVerificationScreen';
+import { PlatformAdminLoginScreen } from '../../src/screens/auth/PlatformAdminLoginScreen';
 import { SchoolLoginScreen } from '../../src/screens/auth/SchoolLoginScreen';
 import { WorkspaceSelectionScreen } from '../../src/screens/auth/WorkspaceSelectionScreen';
 import { RoleLandingScreen } from '../../src/screens/role/RoleLandingScreen';
@@ -52,7 +53,7 @@ beforeEach(() => {
   });
 });
 
-test('school login shows inline validation before requesting OTP', async () => {
+test('school login requires only a valid phone before requesting OTP', async () => {
   const navigation = {
     goBack: jest.fn(),
     navigate: jest.fn(),
@@ -77,10 +78,43 @@ test('school login shows inline validation before requesting OTP', async () => {
 
   expect(
     renderer!.root.findAll(
-      node => node.props.children === 'Enter a valid school code.',
+      node =>
+        node.props.children ===
+        'Enter a valid 10-digit Indian mobile number.',
     ).length,
   ).toBeGreaterThan(0);
+  expect(JSON.stringify(renderer!.toJSON())).not.toContain('School Code');
   expect(navigation.navigate).not.toHaveBeenCalled();
+  await ReactTestRenderer.act(async () => renderer!.unmount());
+});
+
+test('platform login is phone-only', async () => {
+  const navigation = {
+    goBack: jest.fn(),
+    navigate: jest.fn(),
+    replace: jest.fn(),
+  } as unknown as NativeStackScreenProps<
+    AuthStackParamList,
+    'PlatformAdminLogin'
+  >['navigation'];
+  const route = {
+    key: 'PlatformAdminLogin-test',
+    name: 'PlatformAdminLogin' as const,
+  };
+  let renderer: ReactTestRenderer.ReactTestRenderer;
+
+  await ReactTestRenderer.act(async () => {
+    renderer = ReactTestRenderer.create(
+      withSafeArea(
+        <PlatformAdminLoginScreen navigation={navigation} route={route} />,
+      ),
+    );
+  });
+
+  const screen = JSON.stringify(renderer!.toJSON());
+  expect(screen).toContain('Mobile Number');
+  expect(screen).not.toContain('Mobile Number or Email');
+  expect(screen).not.toContain('admin@ohmyteacher.in');
   await ReactTestRenderer.act(async () => renderer!.unmount());
 });
 
@@ -88,7 +122,7 @@ test('OTP verification renders the masked destination', async () => {
   authStore.setState({
     pendingOtpRequest: {
       context: {
-        input: { mobile: '9876543210', schoolCode: 'OMT001' },
+        input: { mobile: '9876543210' },
         kind: 'school',
       },
       destinationMasked: '+91 ••••••3210',

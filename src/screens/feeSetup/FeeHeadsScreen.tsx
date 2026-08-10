@@ -1,92 +1,67 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { AppButton } from '../../components/common/AppButton';
 import { AppHeader } from '../../components/common/AppHeader';
 import { AppSearchInput } from '../../components/common/AppSearchInput';
 import { AppScreen } from '../../components/common/AppScreen';
+import { CurrentFeeHeadCard } from '../../components/feeSetup/CurrentFeeConfigurationComponents';
 import { EmptyState } from '../../components/feedback/EmptyState';
 import { ErrorState } from '../../components/feedback/ErrorState';
 import { LoadingView } from '../../components/feedback/LoadingView';
-import { FeeHeadListItem } from '../../components/feeSetup/FeeComponents';
 import { ROUTES } from '../../constants/routes';
-import { useDebounce } from '../../hooks/useDebounce';
 import { useFeeSetupAccess } from '../../hooks/useFeeSetupAccess';
 import type { RoleScreenProps } from '../../navigation/navigationTypes';
-import { useFeeSetupStore } from '../../store';
+import { useCurrentFeeConfigurationStore } from '../../store';
 
-export function FeeHeadsScreen({
-  navigation,
-  route,
-}: RoleScreenProps<'FeeHeads'>) {
+export function FeeHeadsScreen({ navigation, route }: RoleScreenProps<'FeeHeads'>) {
   const [search, setSearch] = useState('');
-  const debounced = useDebounce(search, 300);
-  const heads = useFeeSetupStore(state => state.feeHeads);
-  const loading = useFeeSetupStore(state => state.isLoadingFeeHeads);
-  const error = useFeeSetupStore(state => state.error);
-  const setContext = useFeeSetupStore(state => state.setContext);
-  const setQuery = useFeeSetupStore(state => state.setFeeHeadQuery);
-  const load = useFeeSetupStore(state => state.loadFeeHeads);
+  const heads = useCurrentFeeConfigurationStore(state => state.feeHeads);
+  const loading = useCurrentFeeConfigurationStore(state => state.isLoadingHeads);
+  const error = useCurrentFeeConfigurationStore(state => state.error);
+  const setContext = useCurrentFeeConfigurationStore(state => state.setContext);
+  const load = useCurrentFeeConfigurationStore(state => state.loadFeeHeads);
   const access = useFeeSetupAccess(route.params.schoolId, route.params.branchId);
 
   useEffect(() => {
-    setContext(
-      {
-        academicSessionId: route.params.academicSessionId,
-        branchId: route.params.branchId,
-        schoolId: route.params.schoolId,
-      },
-      route.params.sessionStatus,
-    );
-    setQuery({ page: 1, search: debounced });
+    setContext(route.params, route.params.sessionStatus);
     load().catch(() => undefined);
-  }, [debounced, load, route.params, setContext, setQuery]);
+  }, [load, route.params, setContext]);
+
+  const visible = useMemo(() => {
+    const term = search.trim().toLowerCase();
+    return heads.filter(item => !term || item.name.toLowerCase().includes(term));
+  }, [heads, search]);
 
   return (
-    <AppScreen scrollable testID="fee-heads-screen">
+    <AppScreen onRefresh={load} refreshing={loading} scrollable testID="fee-heads-screen">
       <View style={styles.maxWidth}>
         <AppHeader
           includeSafeArea={false}
           onBackPress={navigation.goBack}
-          rightActions={
-            access.canManageHeads ? (
-              <AppButton
-                onPress={() =>
-                  navigation.navigate(ROUTES.CREATE_FEE_HEAD, route.params)
-                }
-                title="Add"
-              />
-            ) : null
-          }
-          subtitle={`${heads.totalItems} school Fee Heads`}
+          rightActions={access.canManageHeads ? (
+            <AppButton onPress={() => navigation.navigate(ROUTES.CREATE_FEE_HEAD, route.params)} title="Add" />
+          ) : null}
+          subtitle={`${heads.length} School-wide Fee Heads`}
           title="Fee Heads"
         />
-        <AppSearchInput
-          onChangeText={setSearch}
-          placeholder="Search Fee Heads by name or code"
-          value={search}
-        />
-        {loading && !heads.items.length ? (
-          <LoadingView message="Loading Fee Heads…" />
-        ) : error && !heads.items.length ? (
+        <AppSearchInput onChangeText={setSearch} placeholder="Filter by name" value={search} />
+        {loading && heads.length === 0 ? (
+          <LoadingView message="Loading live Fee Heads…" />
+        ) : error && heads.length === 0 ? (
           <ErrorState message={error.message} onRetry={load} />
-        ) : !heads.items.length ? (
+        ) : visible.length === 0 ? (
           <EmptyState
-            description="Create reusable school-level Fee Heads first."
+            description={search ? 'No Fee Head matches this local filter.' : 'Create a School-wide Fee Head before adding Class items.'}
             title="No Fee Heads"
           />
         ) : (
           <View style={styles.list}>
-            {heads.items.map(item => (
-              <FeeHeadListItem
+            {visible.map(item => (
+              <CurrentFeeHeadCard
                 item={item}
                 key={item.id}
-                onPress={() =>
-                  navigation.navigate(ROUTES.FEE_HEAD_DETAILS, {
-                    ...route.params,
-                    feeHeadId: item.id,
-                  })
-                }
+                onPress={() => navigation.navigate(ROUTES.FEE_HEAD_DETAILS, { ...route.params, feeHeadId: item.id })}
               />
             ))}
           </View>

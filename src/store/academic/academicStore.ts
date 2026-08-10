@@ -22,6 +22,7 @@ import type {
 import type { UserMembership } from '../../models/auth';
 import type { ApiError } from '../../services/api/apiError';
 import { ApiClientError } from '../../services/api/apiError';
+import { mapAcademicFieldErrors } from '../../services/academic/academicMapper';
 import type { PaginatedResponse } from '../../models/common';
 import type { AcademicSessionStatus } from '../../models/organization';
 import type { AcademicService } from '../../services/academic/academicService';
@@ -116,7 +117,7 @@ export interface AcademicActions {
   loadAssignments: (classId: string) => Promise<void>;
   updateAssignments: (
     classId: string,
-    subjectIds: string[],
+    assignments: Array<{ subjectId: string; teacherId: string }>,
   ) => Promise<boolean>;
   clearFeedback: () => void;
   reset: () => void;
@@ -179,7 +180,7 @@ function normalizeError(value: unknown): ApiError {
   if (value instanceof ApiClientError) {
     return {
       code: value.code,
-      fieldErrors: value.fieldErrors,
+      fieldErrors: mapAcademicFieldErrors(value.fieldErrors),
       message: value.message,
       status: value.status,
     };
@@ -714,7 +715,7 @@ export function createAcademicStore({
         }
       },
 
-      async updateAssignments(classId, subjectIds) {
+      async updateAssignments(classId, assignments) {
         set({ error: null, isSaving: true, successMessage: null });
         try {
           const selected = context();
@@ -734,7 +735,7 @@ export function createAcademicStore({
           const response = await service.updateClassSubjectAssignments(
             selected,
             classId,
-            { subjectIds },
+            { assignments },
           );
           set({
             assignments: response.data,

@@ -104,7 +104,6 @@ export function ClassDetailsScreen({
                 <View style={styles.row}>
                   <View style={styles.copy}>
                     <AppText variant="heading2">{item.name}</AppText>
-                    <AppText color={theme.colors.primary}>{item.code}</AppText>
                   </View>
                   <AppBadge
                     status={
@@ -125,7 +124,7 @@ export function ClassDetailsScreen({
                     color={theme.colors.textTertiary}
                     variant="caption"
                   >
-                    Updated {formatDateTime(item.updatedAt)}
+                    Created {formatDateTime(item.createdAt)}
                   </AppText>
                 </View>
               </AppCard>
@@ -145,7 +144,7 @@ export function ClassDetailsScreen({
                     )
                   }
                   title={
-                    access.canAssign ? 'Assign Subjects' : 'View Subjects'
+                    access.canAssign ? 'Assign Teachers' : 'View Teachers'
                   }
                   variant="outline"
                 />
@@ -174,7 +173,7 @@ export function ClassDetailsScreen({
         confirmLabel="Deactivate"
         destructive
         loading={isSaving}
-        message="Deactivate active sections and subject assignments first. Existing history will be preserved."
+        message="Django retains this class’s sections and teacher assignments. Dependent changes remain unavailable until the class is active again."
         onCancel={() => setConfirmDeactivate(false)}
         onConfirm={async () => {
           if (await updateStatus(classId, 'INACTIVE')) {

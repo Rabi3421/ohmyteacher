@@ -15,9 +15,11 @@ import { useAppTheme } from '../../hooks/useAppTheme';
 import type { RoleScreenProps } from '../../navigation/navigationTypes';
 import {
   useAuthStore,
+  useCurrentOrganizationStore,
   useOrganizationStore,
   useUserManagementStore,
 } from '../../store';
+import { getDownstreamMockAcademicSessions } from '../../services/academic/downstreamMockAcademicIdentity';
 import { getEffectivePermissions } from '../../utils/effectivePermissions';
 import { getRoleLabel } from '../../utils/role';
 
@@ -35,11 +37,8 @@ export function RoleLandingScreen({
   const roleConfiguration = useUserManagementStore(
     state => state.roleConfiguration,
   );
-  const branches = useOrganizationStore(state => state.branches.items);
-  const academicSessions = useOrganizationStore(
-    state => state.academicSessions,
-  );
-  const loadBranches = useOrganizationStore(state => state.loadBranches);
+  const branches = useCurrentOrganizationStore(state => state.branches.items);
+  const loadBranches = useCurrentOrganizationStore(state => state.loadBranches);
   const loadAcademicSessions = useOrganizationStore(
     state => state.loadAcademicSessions,
   );
@@ -132,7 +131,7 @@ export function RoleLandingScreen({
           title: 'View My Student Profile',
         }
       : membership.schoolId &&
-        communicationPermissions.includes('communication.history.view')
+        (membership.role === 'SCHOOL_ADMIN' || membership.role === 'BRANCH_ADMIN')
       ? {
           onPress: () =>
             navigation.navigate(ROUTES.STUDENTS, {
@@ -143,14 +142,18 @@ export function RoleLandingScreen({
         }
       : null;
   const feeSetupAction =
-    membership.schoolId && membership.role === 'ACCOUNTANT'
+    membership.schoolId &&
+    ['SCHOOL_ADMIN', 'BRANCH_ADMIN'].includes(membership.role)
       ? {
           onPress: () =>
             navigation.navigate(ROUTES.FEE_SETUP, {
               branchId: membership.branchId,
               schoolId: membership.schoolId!,
             }),
-          title: 'View Fee Setup',
+          title:
+            membership.role === 'SCHOOL_ADMIN'
+              ? 'Manage Fee Configuration'
+              : 'Manage Branch Fee Configuration',
         }
       : null;
   const feeDueAction =
@@ -262,9 +265,12 @@ export function RoleLandingScreen({
   const examinationBranch =
     branches.find(branch => branch.id === membership.branchId) ??
     branches.find(branch => branch.status === 'ACTIVE');
+  const downstreamSessions = membership.schoolId
+    ? getDownstreamMockAcademicSessions(membership.schoolId)
+    : [];
   const examinationSession =
-    academicSessions.find(session => session.status === 'ACTIVE') ??
-    academicSessions.find(session => session.status === 'UPCOMING');
+    downstreamSessions.find(session => session.status === 'ACTIVE') ??
+    downstreamSessions.find(session => session.status === 'UPCOMING');
   const examinationAction =
     membership.schoolId &&
     ['SCHOOL_ADMIN', 'BRANCH_ADMIN'].includes(membership.role) &&

@@ -4,149 +4,92 @@ import { StyleSheet, View } from 'react-native';
 import { AppButton } from '../../components/common/AppButton';
 import { AppCard } from '../../components/common/AppCard';
 import { AppHeader } from '../../components/common/AppHeader';
+import { AppInput } from '../../components/common/AppInput';
 import { AppScreen } from '../../components/common/AppScreen';
-import { ConfirmationDialog } from '../../components/feedback/ConfirmationDialog';
+import { AppText } from '../../components/common/AppText';
 import { ErrorState } from '../../components/feedback/ErrorState';
 import { InlineError } from '../../components/feedback/InlineError';
 import { LoadingView } from '../../components/feedback/LoadingView';
-import { StaffIdentityFormFields } from '../../components/userManagement/StaffIdentityFormFields';
-import type { UpdateUserIdentityInput } from '../../models/userManagement';
 import type { RoleScreenProps } from '../../navigation/navigationTypes';
-import { useUserManagementStore } from '../../store';
-import { isEmail, isIndianMobile, isRequired } from '../../utils/validation';
+import {
+  useCurrentOrganizationStore,
+  useCurrentStaffStore,
+} from '../../store';
+import { isRequired } from '../../utils/validation';
 
 export function EditStaffUserScreen({
   navigation,
   route,
 }: RoleScreenProps<'EditStaffUser'>) {
-  const { membershipId, schoolId } = route.params;
-  const staff = useUserManagementStore(state => state.currentStaff);
-  const loadStaff = useUserManagementStore(state => state.loadStaffUser);
-  const updateIdentity = useUserManagementStore(state => state.updateIdentity);
-  const isLoading = useUserManagementStore(
-    state => state.isLoadingStaffDetails,
-  );
-  const isSaving = useUserManagementStore(state => state.isUpdatingIdentity);
-  const error = useUserManagementStore(state => state.error);
-  const [form, setForm] = useState<UpdateUserIdentityInput>();
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [confirmMobile, setConfirmMobile] = useState(false);
+  const { membershipId: staffId, schoolId } = route.params;
+  const staff = useCurrentStaffStore(state => state.currentStaff);
+  const loadStaff = useCurrentStaffStore(state => state.loadStaffUser);
+  const updateStaff = useCurrentStaffStore(state => state.updateStaff);
+  const isLoading = useCurrentStaffStore(state => state.isLoadingDetails);
+  const isSaving = useCurrentStaffStore(state => state.isSaving);
+  const error = useCurrentStaffStore(state => state.error);
+  const loadSchool = useCurrentOrganizationStore(state => state.loadCurrentSchool);
+  const [name, setName] = useState('');
+  const [nameError, setNameError] = useState<string>();
 
   useEffect(() => {
-    if (staff?.membership.id !== membershipId) {
-      loadStaff(schoolId, membershipId).catch(() => undefined);
-    }
-  }, [loadStaff, membershipId, schoolId, staff?.membership.id]);
+    if (staff?.id !== staffId) loadStaff(schoolId, staffId).catch(() => undefined);
+    loadSchool(schoolId).catch(() => undefined);
+  }, [loadSchool, loadStaff, schoolId, staff?.id, staffId]);
 
   useEffect(() => {
-    if (staff?.membership.id === membershipId) {
-      setForm({
-        email: staff.identity.email,
-        mobile: staff.identity.mobile,
-        name: staff.identity.name,
-      });
-    }
-  }, [membershipId, staff]);
+    if (staff?.id === staffId) setName(staff.name);
+  }, [staff, staffId]);
 
-  if (isLoading && !form) {
+  if (isLoading && staff?.id !== staffId) {
     return <LoadingView message="Preparing staff form…" />;
   }
-  if (!staff || !form) {
-    return (
-      <ErrorState
-        message={error?.message ?? 'Staff information is unavailable.'}
-        onRetry={() => loadStaff(schoolId, membershipId)}
-      />
-    );
+  if (!staff || staff.id !== staffId) {
+    return <ErrorState message={error?.message ?? 'Staff information is unavailable.'} onRetry={() => loadStaff(schoolId, staffId)} />;
   }
 
-  const validate = (): boolean => {
-    const validation: Record<string, string> = {};
-    if (!isRequired(form.name)) validation.name = 'Full name is required.';
-    if (!isIndianMobile(form.mobile)) {
-      validation.mobile = 'Enter a valid 10-digit Indian mobile number.';
-    }
-    if (form.email && !isEmail(form.email)) {
-      validation.email = 'Enter a valid email.';
-    }
-    setErrors(validation);
-    return Object.keys(validation).length === 0;
-  };
-
   const save = async (): Promise<void> => {
-    if (!validate() || isSaving) return;
-    if (form.mobile !== staff.identity.mobile && !confirmMobile) {
-      setConfirmMobile(true);
+    if (!isRequired(name)) {
+      setNameError('Full name is required.');
       return;
     }
-    const updated = await updateIdentity(
-      schoolId,
-      membershipId,
-      form,
-    );
+    setNameError(undefined);
+    if (name.trim() === staff.name.trim()) {
+      navigation.goBack();
+      return;
+    }
+    const updated = await updateStaff(schoolId, staffId, { name });
     if (updated) navigation.goBack();
   };
 
   return (
-    <>
-      <AppScreen
-        contentContainerStyle={styles.screenContent}
-        scrollable
-        testID="edit-staff-user-screen"
-      >
-        <View style={styles.maxWidth}>
-          <AppHeader
-            includeSafeArea={false}
-            onBackPress={navigation.goBack}
-            title="Edit Staff User"
+    <AppScreen contentContainerStyle={styles.screenContent} scrollable testID="edit-staff-user-screen">
+      <View style={styles.maxWidth}>
+        <AppHeader includeSafeArea={false} onBackPress={navigation.goBack} title="Edit Staff User" />
+        <AppCard style={styles.card} variant="elevated">
+          <AppInput
+            error={nameError ?? error?.fieldErrors?.name}
+            label="Full Name"
+            onChangeText={setName}
+            required
+            value={name}
           />
-          <AppCard style={styles.card} variant="elevated">
-            <StaffIdentityFormFields
-              errors={errors}
-              onChange={setForm}
-              value={form}
-            />
-            {error ? (
-              <InlineError message={error.message} style={styles.error} />
-            ) : null}
-            <AppButton
-              fullWidth
-              loading={isSaving}
-              onPress={save}
-              style={styles.submit}
-              title="Save Identity"
-            />
-          </AppCard>
-        </View>
-      </AppScreen>
-      <ConfirmationDialog
-        confirmLabel="Change Mobile"
-        loading={isSaving}
-        message="This mock identity change does not perform OTP verification and will revoke active sessions. A backend verification endpoint is required before production use."
-        onCancel={() => setConfirmMobile(false)}
-        onConfirm={async () => {
-          const updated = await updateIdentity(
-            schoolId,
-            membershipId,
-            form,
-          );
-          if (updated) navigation.goBack();
-        }}
-        title="Confirm sensitive mobile change"
-        visible={confirmMobile}
-      />
-    </>
+          <AppText style={styles.helper} variant="caption">
+            Mobile number and fixed role are read-only in Django.
+          </AppText>
+          {error ? <InlineError message={error.message} style={styles.error} /> : null}
+          <AppButton fullWidth loading={isSaving} onPress={save} style={styles.submit} title="Save Name" />
+        </AppCard>
+      </View>
+    </AppScreen>
   );
 }
 
 const styles = StyleSheet.create({
   card: { marginTop: 20 },
   error: { marginTop: 16 },
-  maxWidth: {
-    alignSelf: 'center',
-    maxWidth: 680,
-    width: '100%',
-  },
+  helper: { marginTop: 10 },
+  maxWidth: { alignSelf: 'center', maxWidth: 680, width: '100%' },
   screenContent: { paddingBottom: 32 },
   submit: { marginTop: 20 },
 });

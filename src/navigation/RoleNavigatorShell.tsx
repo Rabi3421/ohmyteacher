@@ -96,36 +96,27 @@ import { AcademicSessionsScreen } from '../screens/organization/AcademicSessions
 import { BranchDetailsScreen } from '../screens/organization/BranchDetailsScreen';
 import { CreateAcademicSessionScreen } from '../screens/organization/CreateAcademicSessionScreen';
 import { CreateBranchScreen } from '../screens/organization/CreateBranchScreen';
-import { CreateSchoolScreen } from '../screens/organization/CreateSchoolScreen';
 import { EditAcademicSessionScreen } from '../screens/organization/EditAcademicSessionScreen';
 import { EditBranchScreen } from '../screens/organization/EditBranchScreen';
 import { EditSchoolScreen } from '../screens/organization/EditSchoolScreen';
-import { OrganizationSetupSuccessScreen } from '../screens/organization/OrganizationSetupSuccessScreen';
 import { SchoolBranchesScreen } from '../screens/organization/SchoolBranchesScreen';
 import { SchoolDetailsScreen } from '../screens/organization/SchoolDetailsScreen';
 import { SchoolSettingsScreen } from '../screens/organization/SchoolSettingsScreen';
-import { SuperAdminSchoolsScreen } from '../screens/organization/SuperAdminSchoolsScreen';
 import { RoleLandingScreen } from '../screens/role/RoleLandingScreen';
-import { CreateDiscountDefinitionScreen } from '../screens/feeSetup/CreateDiscountDefinitionScreen';
+import { CreatePlatformSchoolScreen } from '../screens/platform/CreatePlatformSchoolScreen';
+import { EditPlatformSchoolScreen } from '../screens/platform/EditPlatformSchoolScreen';
+import { PlatformDashboardScreen } from '../screens/platform/PlatformDashboardScreen';
+import { PlatformSchoolDetailsScreen } from '../screens/platform/PlatformSchoolDetailsScreen';
+import { PlatformSchoolsScreen } from '../screens/platform/PlatformSchoolsScreen';
 import { CreateFeeHeadScreen } from '../screens/feeSetup/CreateFeeHeadScreen';
 import { CreateFeeStructureScreen } from '../screens/feeSetup/CreateFeeStructureScreen';
-import { CreateFineRuleScreen } from '../screens/feeSetup/CreateFineRuleScreen';
-import { DiscountDefinitionsScreen } from '../screens/feeSetup/DiscountDefinitionsScreen';
-import { EditDiscountDefinitionScreen } from '../screens/feeSetup/EditDiscountDefinitionScreen';
 import { EditFeeHeadScreen } from '../screens/feeSetup/EditFeeHeadScreen';
-import { EditFeeStructureScreen } from '../screens/feeSetup/EditFeeStructureScreen';
-import { EditFineRuleScreen } from '../screens/feeSetup/EditFineRuleScreen';
 import { FeeHeadDetailsScreen } from '../screens/feeSetup/FeeHeadDetailsScreen';
 import { FeeHeadsScreen } from '../screens/feeSetup/FeeHeadsScreen';
 import { FeeSetupScreen } from '../screens/feeSetup/FeeSetupScreen';
 import { FeeStructureDetailsScreen } from '../screens/feeSetup/FeeStructureDetailsScreen';
-import { FeeStructurePreviewScreen } from '../screens/feeSetup/FeeStructurePreviewScreen';
 import { FeeStructuresScreen } from '../screens/feeSetup/FeeStructuresScreen';
-import { FineRulesScreen } from '../screens/feeSetup/FineRulesScreen';
-import { StudentFeeAssignmentDetailsScreen } from '../screens/feeSetup/StudentFeeAssignmentDetailsScreen';
-import { StudentFeeAssignmentsScreen } from '../screens/feeSetup/StudentFeeAssignmentsScreen';
-import { EditStudentFeeAssignmentScreen } from '../screens/feeSetup/EditStudentFeeAssignmentScreen';
-import { StudentPayablePreviewScreen } from '../screens/feeSetup/StudentPayablePreviewScreen';
+import { UnsupportedFeeConfigurationScreen } from '../screens/feeSetup/UnsupportedFeeConfigurationScreen';
 import { CancelFeeDueScreen } from '../screens/feeDue/CancelFeeDueScreen';
 import { FeeDueDetailsScreen } from '../screens/feeDue/FeeDueDetailsScreen';
 import { FeeGenerationHistoryScreen } from '../screens/feeDue/FeeGenerationHistoryScreen';
@@ -142,24 +133,14 @@ import { PendingFeesScreen } from '../screens/feeDue/PendingFeesScreen';
 import { StudentFeeDuesScreen } from '../screens/feeDue/StudentFeeDuesScreen';
 import { StudentFeesScreen } from '../screens/feeDue/StudentFeesScreen';
 import { WaiveFeeDueScreen } from '../screens/feeDue/WaiveFeeDueScreen';
-import { CreateGuardianScreen } from '../screens/student/CreateGuardianScreen';
 import { CreateStudentScreen } from '../screens/student/CreateStudentScreen';
-import { EditGuardianScreen } from '../screens/student/EditGuardianScreen';
 import { EditStudentScreen } from '../screens/student/EditStudentScreen';
 import { ParentChildDetailsScreen } from '../screens/student/ParentChildDetailsScreen';
 import { ParentChildrenScreen } from '../screens/student/ParentChildrenScreen';
-import { StudentAccessScreen } from '../screens/student/StudentAccessScreen';
-import { StudentAdmissionReviewScreen } from '../screens/student/StudentAdmissionReviewScreen';
-import { StudentAdmissionSuccessScreen } from '../screens/student/StudentAdmissionSuccessScreen';
 import { StudentDetailsScreen } from '../screens/student/StudentDetailsScreen';
-import { StudentEnrollmentHistoryScreen } from '../screens/student/StudentEnrollmentHistoryScreen';
-import { StudentGuardiansScreen } from '../screens/student/StudentGuardiansScreen';
-import { StudentSelfProfileScreen } from '../screens/student/StudentSelfProfileScreen';
 import { StudentsScreen } from '../screens/student/StudentsScreen';
-import { TransferStudentScreen } from '../screens/student/TransferStudentScreen';
-import { ActiveSessionsScreen } from '../screens/userManagement/ActiveSessionsScreen';
+import { UnsupportedStudentCapabilityScreen } from '../screens/student/UnsupportedStudentCapabilityScreen';
 import { AssignBranchesScreen } from '../screens/userManagement/AssignBranchesScreen';
-import { ChangeUserRoleScreen } from '../screens/userManagement/ChangeUserRoleScreen';
 import { CreateStaffUserScreen } from '../screens/userManagement/CreateStaffUserScreen';
 import { EditStaffUserScreen } from '../screens/userManagement/EditStaffUserScreen';
 import { RoleDetailsScreen } from '../screens/userManagement/RoleDetailsScreen';
@@ -167,7 +148,6 @@ import { RoleListScreen } from '../screens/userManagement/RoleListScreen';
 import { RolePermissionsScreen } from '../screens/userManagement/RolePermissionsScreen';
 import { StaffUserDetailsScreen } from '../screens/userManagement/StaffUserDetailsScreen';
 import { StaffUsersScreen } from '../screens/userManagement/StaffUsersScreen';
-import { UserActivityScreen } from '../screens/userManagement/UserActivityScreen';
 import type { RoleStackParamList } from './navigationTypes';
 import {
   CalculateResultsScreen,
@@ -270,11 +250,12 @@ export function RoleNavigatorShell({ role }: RoleNavigatorShellProps) {
     roleConfiguration?.role === role ? roleConfiguration : null,
   );
   const isSuperAdmin = role === 'SUPER_ADMIN';
-  const canManageSchool = role === 'SUPER_ADMIN' || role === 'SCHOOL_ADMIN';
+  const canManageSchool = role === 'SCHOOL_ADMIN';
   const canViewOrganization = canManageSchool || role === 'BRANCH_ADMIN';
   const canViewStaff = canViewOrganization;
-  const canManageStaff = isSuperAdmin || role === 'SCHOOL_ADMIN';
+  const canManageStaff = canViewStaff;
   const canManageSchoolStaff = role === 'SCHOOL_ADMIN';
+  const canManageStudents = role === 'SCHOOL_ADMIN' || role === 'BRANCH_ADMIN';
   const isStaff = [
     'SUPER_ADMIN',
     'SCHOOL_ADMIN',
@@ -282,12 +263,7 @@ export function RoleNavigatorShell({ role }: RoleNavigatorShellProps) {
     'ACCOUNTANT',
     'RECEPTIONIST',
   ].includes(role);
-  const canViewFeeSetup = [
-    'SUPER_ADMIN',
-    'SCHOOL_ADMIN',
-    'BRANCH_ADMIN',
-    'ACCOUNTANT',
-  ].includes(role);
+  const canViewFeeSetup = ['SCHOOL_ADMIN', 'BRANCH_ADMIN'].includes(role);
   const canOperateFeeDues = [
     'SUPER_ADMIN',
     'SCHOOL_ADMIN',
@@ -318,7 +294,7 @@ export function RoleNavigatorShell({ role }: RoleNavigatorShellProps) {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen
-        component={RoleLandingScreen}
+        component={isSuperAdmin ? PlatformDashboardScreen : RoleLandingScreen}
         initialParams={{ role }}
         name={ROUTES.ROLE_LANDING}
       />
@@ -796,17 +772,18 @@ export function RoleNavigatorShell({ role }: RoleNavigatorShellProps) {
             component={NotificationDetailsScreen}
             name={ROUTES.NOTIFICATION_DETAILS}
           />
+          {canManageStudents ? <>
           <Stack.Screen component={StudentsScreen} name={ROUTES.STUDENTS} />
           <Stack.Screen
             component={CreateStudentScreen}
             name={ROUTES.CREATE_STUDENT}
           />
           <Stack.Screen
-            component={StudentAdmissionReviewScreen}
+            component={UnsupportedStudentCapabilityScreen}
             name={ROUTES.STUDENT_ADMISSION_REVIEW}
           />
           <Stack.Screen
-            component={StudentAdmissionSuccessScreen}
+            component={UnsupportedStudentCapabilityScreen}
             name={ROUTES.STUDENT_ADMISSION_SUCCESS}
           />
           <Stack.Screen
@@ -818,29 +795,30 @@ export function RoleNavigatorShell({ role }: RoleNavigatorShellProps) {
             name={ROUTES.EDIT_STUDENT}
           />
           <Stack.Screen
-            component={StudentGuardiansScreen}
+            component={UnsupportedStudentCapabilityScreen}
             name={ROUTES.STUDENT_GUARDIANS}
           />
           <Stack.Screen
-            component={CreateGuardianScreen}
+            component={UnsupportedStudentCapabilityScreen}
             name={ROUTES.CREATE_GUARDIAN}
           />
           <Stack.Screen
-            component={EditGuardianScreen}
+            component={UnsupportedStudentCapabilityScreen}
             name={ROUTES.EDIT_GUARDIAN}
           />
           <Stack.Screen
-            component={StudentEnrollmentHistoryScreen}
+            component={UnsupportedStudentCapabilityScreen}
             name={ROUTES.STUDENT_ENROLLMENT_HISTORY}
           />
           <Stack.Screen
-            component={TransferStudentScreen}
+            component={UnsupportedStudentCapabilityScreen}
             name={ROUTES.TRANSFER_STUDENT}
           />
           <Stack.Screen
-            component={StudentAccessScreen}
+            component={UnsupportedStudentCapabilityScreen}
             name={ROUTES.STUDENT_ACCESS}
           />
+          </> : null}
         </>
       ) : null}
       {canViewFeeSetup ? (
@@ -868,7 +846,7 @@ export function RoleNavigatorShell({ role }: RoleNavigatorShellProps) {
             name={ROUTES.CREATE_FEE_STRUCTURE}
           />
           <Stack.Screen
-            component={EditFeeStructureScreen}
+            component={UnsupportedFeeConfigurationScreen}
             name={ROUTES.EDIT_FEE_STRUCTURE}
           />
           <Stack.Screen
@@ -876,44 +854,44 @@ export function RoleNavigatorShell({ role }: RoleNavigatorShellProps) {
             name={ROUTES.FEE_STRUCTURE_DETAILS}
           />
           <Stack.Screen
-            component={FeeStructurePreviewScreen}
+            component={UnsupportedFeeConfigurationScreen}
             name={ROUTES.FEE_STRUCTURE_PREVIEW}
           />
           <Stack.Screen
-            component={StudentFeeAssignmentsScreen}
+            component={UnsupportedFeeConfigurationScreen}
             name={ROUTES.STUDENT_FEE_ASSIGNMENTS}
           />
           <Stack.Screen
-            component={StudentFeeAssignmentDetailsScreen}
+            component={UnsupportedFeeConfigurationScreen}
             name={ROUTES.STUDENT_FEE_ASSIGNMENT_DETAILS}
           />
           <Stack.Screen
-            component={EditStudentFeeAssignmentScreen}
+            component={UnsupportedFeeConfigurationScreen}
             name={ROUTES.EDIT_STUDENT_FEE_ASSIGNMENT}
           />
           <Stack.Screen
-            component={DiscountDefinitionsScreen}
+            component={UnsupportedFeeConfigurationScreen}
             name={ROUTES.DISCOUNT_DEFINITIONS}
           />
           <Stack.Screen
-            component={CreateDiscountDefinitionScreen}
+            component={UnsupportedFeeConfigurationScreen}
             name={ROUTES.CREATE_DISCOUNT_DEFINITION}
           />
           <Stack.Screen
-            component={EditDiscountDefinitionScreen}
+            component={UnsupportedFeeConfigurationScreen}
             name={ROUTES.EDIT_DISCOUNT_DEFINITION}
           />
-          <Stack.Screen component={FineRulesScreen} name={ROUTES.FINE_RULES} />
+          <Stack.Screen component={UnsupportedFeeConfigurationScreen} name={ROUTES.FINE_RULES} />
           <Stack.Screen
-            component={CreateFineRuleScreen}
+            component={UnsupportedFeeConfigurationScreen}
             name={ROUTES.CREATE_FINE_RULE}
           />
           <Stack.Screen
-            component={EditFineRuleScreen}
+            component={UnsupportedFeeConfigurationScreen}
             name={ROUTES.EDIT_FINE_RULE}
           />
           <Stack.Screen
-            component={StudentPayablePreviewScreen}
+            component={UnsupportedFeeConfigurationScreen}
             name={ROUTES.STUDENT_PAYABLE_PREVIEW}
           />
         </>
@@ -1119,7 +1097,7 @@ export function RoleNavigatorShell({ role }: RoleNavigatorShellProps) {
             name={ROUTES.STUDENT_NOTIFICATION_DETAILS}
           />
           <Stack.Screen
-            component={StudentSelfProfileScreen}
+            component={UnsupportedStudentCapabilityScreen}
             name={ROUTES.STUDENT_SELF_PROFILE}
           />
           <Stack.Screen
@@ -1139,16 +1117,20 @@ export function RoleNavigatorShell({ role }: RoleNavigatorShellProps) {
       {isSuperAdmin ? (
         <>
           <Stack.Screen
-            component={SuperAdminSchoolsScreen}
+            component={PlatformSchoolsScreen}
             name={ROUTES.SCHOOLS}
           />
           <Stack.Screen
-            component={CreateSchoolScreen}
+            component={CreatePlatformSchoolScreen}
             name={ROUTES.CREATE_SCHOOL}
           />
           <Stack.Screen
-            component={OrganizationSetupSuccessScreen}
-            name={ROUTES.ORGANIZATION_SETUP_SUCCESS}
+            component={PlatformSchoolDetailsScreen}
+            name={ROUTES.SCHOOL_DETAILS}
+          />
+          <Stack.Screen
+            component={EditPlatformSchoolScreen}
+            name={ROUTES.EDIT_SCHOOL}
           />
         </>
       ) : null}
@@ -1250,10 +1232,6 @@ export function RoleNavigatorShell({ role }: RoleNavigatorShellProps) {
             component={StaffUserDetailsScreen}
             name={ROUTES.STAFF_USER_DETAILS}
           />
-          <Stack.Screen
-            component={UserActivityScreen}
-            name={ROUTES.USER_ACTIVITY}
-          />
         </>
       ) : null}
       {canManageStaff ? (
@@ -1266,10 +1244,6 @@ export function RoleNavigatorShell({ role }: RoleNavigatorShellProps) {
             component={EditStaffUserScreen}
             name={ROUTES.EDIT_STAFF_USER}
           />
-          <Stack.Screen
-            component={ActiveSessionsScreen}
-            name={ROUTES.ACTIVE_SESSIONS}
-          />
         </>
       ) : null}
       {canManageSchoolStaff ? (
@@ -1277,10 +1251,6 @@ export function RoleNavigatorShell({ role }: RoleNavigatorShellProps) {
           <Stack.Screen
             component={AssignBranchesScreen}
             name={ROUTES.ASSIGN_BRANCHES}
-          />
-          <Stack.Screen
-            component={ChangeUserRoleScreen}
-            name={ROUTES.CHANGE_USER_ROLE}
           />
           <Stack.Screen component={RoleListScreen} name={ROUTES.ROLE_LIST} />
           <Stack.Screen

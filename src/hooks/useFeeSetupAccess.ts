@@ -1,85 +1,30 @@
-import { useAuthStore, useFeeSetupStore, useUserManagementStore } from '../store';
-import {
-  canApplyAmountOverride,
-  canApplyExemption,
-  canManageDiscountDefinitions,
-  canManageFeeHeads,
-  canManageFineRules,
-  canManageFeeStructures,
-  canManageStudentFeeAssignments,
-  canViewFeeSetup,
-} from '../utils/feePermissions';
-import { getEffectivePermissions } from '../utils/effectivePermissions';
+import { useAuthStore, useCurrentFeeConfigurationStore } from '../store';
 
 export function useFeeSetupAccess(schoolId: string, branchId?: string) {
   const membership = useAuthStore(state => state.activeMembership);
-  const configuration = useUserManagementStore(
-    state => state.roleConfiguration,
+  const sessionStatus = useCurrentFeeConfigurationStore(
+    state => state.sessionStatus,
   );
-  const sessionStatus = useFeeSetupStore(state => state.sessionStatus);
-  const permissions = membership
-    ? getEffectivePermissions(
-        membership.role,
-        configuration?.role === membership.role &&
-          configuration.schoolId === membership.schoolId
-          ? configuration
-          : null,
-      )
-    : [];
+  const inSchool = Boolean(
+    membership?.schoolId === schoolId &&
+      ['SCHOOL_ADMIN', 'BRANCH_ADMIN'].includes(membership.role),
+  );
+  const inBranch = Boolean(
+    inSchool &&
+      (!branchId ||
+        membership?.role === 'SCHOOL_ADMIN' ||
+        membership?.branchId === branchId),
+  );
+  const writable = sessionStatus !== 'CLOSED';
   return {
-    canExempt:
-      Boolean(membership && branchId) &&
-      canApplyExemption(
-        membership!,
-        permissions,
-        schoolId,
-        branchId!,
-        sessionStatus,
-      ),
-    canManageAssignments:
-      Boolean(membership && branchId) &&
-      canManageStudentFeeAssignments(
-        membership!,
-        permissions,
-        schoolId,
-        branchId!,
-        sessionStatus,
-      ),
-    canManageDiscounts:
-      Boolean(membership) &&
-      canManageDiscountDefinitions(
-        membership!,
-        permissions,
-        schoolId,
-        sessionStatus,
-      ),
-    canManageFineRules:
-      Boolean(membership) &&
-      canManageFineRules(membership!, permissions, schoolId, sessionStatus),
-    canManageHeads:
-      Boolean(membership) &&
-      canManageFeeHeads(membership!, permissions, schoolId, sessionStatus),
-    canManageStructures:
-      Boolean(membership && branchId) &&
-      canManageFeeStructures(
-        membership!,
-        permissions,
-        schoolId,
-        branchId!,
-        sessionStatus,
-      ),
-    canOverride:
-      Boolean(membership && branchId) &&
-      canApplyAmountOverride(
-        membership!,
-        permissions,
-        schoolId,
-        branchId!,
-        sessionStatus,
-      ),
-    canView:
-      Boolean(membership) &&
-      canViewFeeSetup(membership!, permissions, schoolId, branchId),
+    canExempt: false,
+    canManageAssignments: false,
+    canManageDiscounts: false,
+    canManageFineRules: false,
+    canManageHeads: Boolean(inSchool && membership?.role === 'SCHOOL_ADMIN' && writable),
+    canManageStructures: Boolean(inBranch && writable),
+    canOverride: false,
+    canView: inBranch,
     isClosed: sessionStatus === 'CLOSED',
   };
 }

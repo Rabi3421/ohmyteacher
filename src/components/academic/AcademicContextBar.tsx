@@ -5,6 +5,7 @@ import { useAppTheme } from '../../hooks/useAppTheme';
 import {
   useAcademicStore,
   useAuthStore,
+  useCurrentOrganizationStore,
   useOrganizationStore,
   useUserManagementStore,
 } from '../../store';
@@ -26,11 +27,21 @@ export function AcademicContextBar({
 }: AcademicContextBarProps) {
   const theme = useAppTheme();
   const membership = useAuthStore(state => state.activeMembership);
-  const currentSchool = useOrganizationStore(state => state.currentSchool);
-  const branches = useOrganizationStore(state => state.branches.items);
+  const currentSchool = useCurrentOrganizationStore(
+    state => state.currentSchool,
+  );
+  const branches = useCurrentOrganizationStore(state => state.branches.items);
   const sessions = useOrganizationStore(state => state.academicSessions);
-  const loadSchool = useOrganizationStore(state => state.loadSchool);
-  const loadBranches = useOrganizationStore(state => state.loadBranches);
+  const isLoadingBranches = useCurrentOrganizationStore(state => state.isLoadingBranches);
+  const isLoadingSessions = useOrganizationStore(state => state.isLoadingSessions);
+  const branchError = useCurrentOrganizationStore(state => state.branchError);
+  const sessionError = useOrganizationStore(state => state.error);
+  const loadSchool = useCurrentOrganizationStore(
+    state => state.loadCurrentSchool,
+  );
+  const loadBranches = useCurrentOrganizationStore(
+    state => state.loadBranches,
+  );
   const loadSessions = useOrganizationStore(
     state => state.loadAcademicSessions,
   );
@@ -173,6 +184,27 @@ export function AcademicContextBar({
           />
         ) : null}
       </View>
+      {isLoadingBranches || isLoadingSessions ? (
+        <AppText color={theme.colors.textSecondary} style={styles.notice} variant="caption">
+          Refreshing live academic context…
+        </AppText>
+      ) : null}
+      {!isLoadingBranches && availableBranches.length === 0 ? (
+        <View style={styles.notice}>
+          <AppText color={theme.colors.error} variant="caption">
+            {branchError?.message ?? 'No active accessible branch is available.'}
+          </AppText>
+          <AppButton onPress={() => loadBranches(schoolId)} title="Retry Branches" variant="outline" />
+        </View>
+      ) : null}
+      {!isLoadingSessions && availableSessions.length === 0 ? (
+        <View style={styles.notice}>
+          <AppText color={theme.colors.error} variant="caption">
+            {sessionError?.message ?? 'No academic session is available.'}
+          </AppText>
+          <AppButton onPress={() => loadSessions(schoolId)} title="Retry Sessions" variant="outline" />
+        </View>
+      ) : null}
       <AppText style={styles.label} variant="caption">
         Branch
       </AppText>
@@ -238,6 +270,7 @@ const styles = StyleSheet.create({
   copy: { flex: 1 },
   label: { marginBottom: 6, marginTop: 14 },
   options: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  notice: { gap: 8, marginTop: 12 },
   readOnly: { borderRadius: 10, marginTop: 14, padding: 10 },
   titleRow: { alignItems: 'center', flexDirection: 'row', gap: 12 },
 });

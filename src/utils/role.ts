@@ -1,4 +1,5 @@
 import type { AppRole } from '../constants/permissions';
+import type { BackendStaffRole } from '../models/liveStaff';
 
 export const ROLE_LABELS: Record<AppRole, string> = {
   SUPER_ADMIN: 'Super Admin',
@@ -12,6 +13,10 @@ export const ROLE_LABELS: Record<AppRole, string> = {
 
 export function getRoleLabel(role: AppRole): string {
   return ROLE_LABELS[role];
+}
+
+export function getBackendStaffRoleLabel(role: BackendStaffRole): string {
+  return role === 'BRANCH_ADMIN' ? 'Branch Admin' : 'Teacher';
 }
 
 export function isSupportedRole(role: string): role is AppRole {

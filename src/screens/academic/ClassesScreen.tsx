@@ -139,11 +139,9 @@ export function ClassesScreen({
                   <View style={styles.row}>
                     <View style={styles.copy}>
                       <AppText variant="title">
-                        {item.displayOrder}. {item.name}
+                        {item.name}
                       </AppText>
-                      <AppText color={theme.colors.primary} variant="caption">
-                        {item.code}
-                      </AppText>
+                      <AppText color={theme.colors.primary} variant="caption">Display order {item.displayOrder}</AppText>
                     </View>
                     <AppBadge
                       status={
@@ -195,7 +193,7 @@ export function ClassesScreen({
         confirmLabel="Deactivate"
         destructive
         loading={isSaving}
-        message="All active sections and subject assignments must be deactivated first."
+        message="Django keeps sections and teacher assignments when a class is deactivated. New dependent changes remain unavailable until the class is active again."
         onCancel={() => setPending(null)}
         onConfirm={async () => {
           if (pending && (await updateStatus(pending.id, 'INACTIVE'))) {

@@ -7,77 +7,20 @@ import { AppScreen } from '../../components/common/AppScreen';
 import { AppText } from '../../components/common/AppText';
 import { ErrorState } from '../../components/feedback/ErrorState';
 import { LoadingView } from '../../components/feedback/LoadingView';
-import {
-  EnrollmentSummaryCard,
-  GuardianCard,
-  StudentProfileHeader,
-} from '../../components/student/StudentComponents';
+import { CurrentStudentFacts, CurrentStudentStatusBadge } from '../../components/student/CurrentStudentComponents';
 import type { RoleScreenProps } from '../../navigation/navigationTypes';
-import { useStudentStore } from '../../store';
-import { formatDisplayDate } from '../../utils/date';
+import { useCurrentStudentStore } from '../../store';
 
-export function ParentChildDetailsScreen({
-  navigation,
-  route,
-}: RoleScreenProps<'ParentChildDetails'>) {
-  const { schoolId, parentMembershipId, studentId } = route.params;
-  const child = useStudentStore(state => state.parentSelectedChild);
-  const isLoading = useStudentStore(state => state.isLoadingStudent);
-  const error = useStudentStore(state => state.error);
-  const loadChild = useStudentStore(state => state.loadParentChild);
-  const current = child?.profile.id === studentId ? child : null;
-
-  useEffect(() => {
-    loadChild(schoolId, parentMembershipId, studentId).catch(() => undefined);
-  }, [loadChild, parentMembershipId, schoolId, studentId]);
-
-  return (
-    <AppScreen scrollable testID="parent-child-details-screen">
-      <View style={styles.maxWidth}>
-        <AppHeader
-          includeSafeArea={false}
-          onBackPress={navigation.goBack}
-          subtitle="Read-only school record"
-          title="Child Profile"
-        />
-        {isLoading && !current ? (
-          <LoadingView message="Loading child profile…" />
-        ) : error && !current ? (
-          <ErrorState
-            message={error.message}
-            onRetry={() =>
-              loadChild(schoolId, parentMembershipId, studentId)
-            }
-          />
-        ) : current ? (
-          <View style={styles.sections}>
-            <AppCard variant="elevated">
-              <StudentProfileHeader profile={current.profile} />
-              <View style={styles.facts}>
-                <AppText>
-                  Date of birth: {formatDisplayDate(current.profile.dateOfBirth)}
-                </AppText>
-                <AppText>Gender: {current.profile.gender}</AppText>
-                <AppText>
-                  Admission date:{' '}
-                  {formatDisplayDate(current.profile.admissionDate)}
-                </AppText>
-              </View>
-            </AppCard>
-            <EnrollmentSummaryCard enrollment={current.currentEnrollment} />
-            <AppText variant="heading3">Family Contacts</AppText>
-            {current.guardians.map(guardian => (
-              <GuardianCard guardian={guardian} key={guardian.id} />
-            ))}
-          </View>
-        ) : null}
-      </View>
-    </AppScreen>
-  );
+export function ParentChildDetailsScreen({ navigation, route }: RoleScreenProps<'ParentChildDetails'>) {
+  const children = useCurrentStudentStore(state => state.myChildren);
+  const child = children.find(item => item.id === route.params.studentId);
+  const isLoading = useCurrentStudentStore(state => state.isLoading);
+  const error = useCurrentStudentStore(state => state.error);
+  const load = useCurrentStudentStore(state => state.loadMyChildren);
+  useEffect(() => { if (!child) load().catch(() => undefined); }, [child, load]);
+  return <AppScreen scrollable testID="parent-child-details-screen"><View style={styles.maxWidth}>
+    <AppHeader includeSafeArea={false} onBackPress={navigation.goBack} subtitle="Read-only record from /my-children/" title="Child Profile" />
+    {isLoading && !child ? <LoadingView message="Loading child profile…" /> : error && !child ? <ErrorState message={error.message} onRetry={load} /> : child ? <AppCard variant="elevated"><View style={styles.heading}><AppText variant="heading2">{child.name}</AppText><CurrentStudentStatusBadge status={child.status} /></View><CurrentStudentFacts item={child} showParent={false} /></AppCard> : null}
+  </View></AppScreen>;
 }
-
-const styles = StyleSheet.create({
-  facts: { gap: 6, marginTop: 16 },
-  maxWidth: { alignSelf: 'center', maxWidth: 720, width: '100%' },
-  sections: { gap: 14 },
-});
+const styles = StyleSheet.create({ heading: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between', marginBottom: 16 }, maxWidth: { alignSelf: 'center', maxWidth: 720, width: '100%' } });

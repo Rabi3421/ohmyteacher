@@ -226,18 +226,18 @@ describe('academic store', () => {
     expect(jest.getTimerCount()).toBe(0);
   });
 
-  it('enforces read-only Branch Admin and closed-session mutations', async () => {
+  it('allows backend-confirmed Branch Admin mutations and blocks legacy closed contexts', async () => {
     const branchStore = createStore(branchAdmin, viewPermissions);
     branchStore.getState().setContext(context, 'ACTIVE');
-    await branchStore.getState().createClass({
+    const branchMutation = branchStore.getState().createClass({
       code: 'C11',
       displayOrder: 14,
       name: 'Class 11',
       status: 'ACTIVE',
     });
-    expect(branchStore.getState().error?.code).toBe(
-      'ACADEMIC_ACCESS_DENIED',
-    );
+    jest.runOnlyPendingTimers();
+    expect(await branchMutation).not.toBeNull();
+    expect(branchStore.getState().error).toBeNull();
 
     const closedStore = createStore();
     closedStore.getState().setContext(

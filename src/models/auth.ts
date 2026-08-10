@@ -35,7 +35,7 @@ export interface AuthTokens {
 }
 
 export interface OtpRequest {
-  requestId: string;
+  requestId?: string;
   destinationMasked: string;
   expiresInSeconds: number;
   resendAvailableInSeconds: number;
@@ -45,10 +45,13 @@ export interface AuthSession {
   user: AuthUser;
   memberships: UserMembership[];
   tokens: AuthTokens;
+  isNewUser?: boolean;
+  school?: AuthSchool;
+  unsupportedRole?: string;
 }
 
 export interface SchoolOtpInput {
-  schoolCode: string;
+  schoolCode?: string;
   mobile: string;
 }
 
@@ -70,3 +73,31 @@ export type InactiveReason =
   | 'SCHOOL_INACTIVE'
   | 'BRANCH_INACTIVE'
   | 'MEMBERSHIP_INACTIVE';
+
+export interface AuthIdentity {
+  user: AuthUser;
+  memberships: UserMembership[];
+  unsupportedRole?: string;
+}
+
+export interface AuthSchool {
+  id: ID;
+  name: string;
+  address: string;
+  phone: string;
+  email: string;
+  upiId: string;
+  status: AccountStatus;
+  createdAt: string;
+}
+
+export interface AuthOnboardingInput {
+  name: string;
+  school: {
+    name: string;
+    address?: string;
+    phone?: string;
+    email?: string;
+    upiId?: string;
+  };
+}

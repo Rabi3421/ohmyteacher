@@ -12,6 +12,10 @@ import type {
 } from '../../src/models/academic';
 import type { UserMembership } from '../../src/models/auth';
 import type {
+  CurrentSchool,
+  OrganizationBranch,
+} from '../../src/models/currentOrganization';
+import type {
   AcademicSession,
   Branch,
   School,
@@ -36,6 +40,11 @@ import {
   INITIAL_ORGANIZATION_STATE,
   organizationStore,
 } from '../../src/store/organization/organizationStore';
+import {
+  currentOrganizationStore,
+  INITIAL_CURRENT_ORGANIZATION_STATE,
+} from '../../src/store/organization/currentOrganizationStore';
+import { currentStaffStore, INITIAL_CURRENT_STAFF_STATE } from '../../src/store/userManagement/currentStaffStore';
 import {
   INITIAL_USER_MANAGEMENT_STATE,
   userManagementStore,
@@ -97,6 +106,27 @@ const branch: Branch = {
   schoolId: school.id,
   status: 'ACTIVE',
   updatedAt: school.updatedAt,
+};
+const currentSchool: CurrentSchool = {
+  address: school.address.line1,
+  createdAt: school.createdAt,
+  email: '',
+  id: school.id,
+  name: school.name,
+  phone: school.mobile,
+  status: 'ACTIVE',
+  upiId: '',
+};
+const currentBranch: OrganizationBranch = {
+  address: branch.address.line1,
+  code: branch.code,
+  createdAt: branch.createdAt,
+  email: '',
+  id: branch.id,
+  name: branch.name,
+  phone: branch.mobile,
+  schoolId: school.id,
+  status: 'ACTIVE',
 };
 const activeSession: AcademicSession = {
   createdAt: school.createdAt,
@@ -166,6 +196,7 @@ const assignment: ClassSubjectAssignment = {
   id: 'assignment-c05-eng',
   status: 'ACTIVE',
   subjectId: subject.id,
+  teacherId: 'teacher-1',
   updatedAt: school.updatedAt,
 };
 const summary: AcademicSetupSummary = {
@@ -204,6 +235,10 @@ const originalOrganizationActions = {
     organizationStore.getState().loadAcademicSessions,
   loadBranches: organizationStore.getState().loadBranches,
   loadSchool: organizationStore.getState().loadSchool,
+};
+const originalCurrentOrganizationActions = {
+  loadBranches: currentOrganizationStore.getState().loadBranches,
+  loadCurrentSchool: currentOrganizationStore.getState().loadCurrentSchool,
 };
 let mountedRenderer: ReactTestRenderer.ReactTestRenderer | null = null;
 
@@ -288,6 +323,18 @@ beforeEach(() => {
     loadBranches: jest.fn().mockResolvedValue(undefined),
     loadSchool: jest.fn().mockResolvedValue(true),
   });
+  currentOrganizationStore.setState({
+    ...INITIAL_CURRENT_ORGANIZATION_STATE,
+    allBranches: [currentBranch],
+    branches: {
+      items: [currentBranch],
+      pagination: null,
+      totalItems: 1,
+    },
+    currentSchool,
+    loadBranches: jest.fn().mockResolvedValue(true),
+    loadCurrentSchool: jest.fn().mockResolvedValue(true),
+  });
   academicStore.setState({
     ...INITIAL_ACADEMIC_STATE,
     assignments: [assignment],
@@ -314,6 +361,15 @@ beforeEach(() => {
     subjects: page([subject]),
     summary,
   });
+  currentStaffStore.setState({
+    ...INITIAL_CURRENT_STAFF_STATE,
+    loadStaff: jest.fn().mockResolvedValue(true),
+    staff: {
+      items: [{ branch: { id: branch.id, name: branch.name, status: 'ACTIVE' }, id: 'teacher-1', joinedAt: school.createdAt, mobile: '9000000000', name: 'Teacher One', role: 'TEACHER', schoolId: school.id, status: 'ACTIVE' }],
+      pagination: null,
+      totalItems: 1,
+    },
+  });
 });
 
 afterEach(async () => {
@@ -323,6 +379,7 @@ afterEach(async () => {
 afterAll(() => {
   academicStore.setState(originalAcademicActions);
   organizationStore.setState(originalOrganizationActions);
+  currentOrganizationStore.setState(originalCurrentOrganizationActions);
 });
 
 test('academic setup overview renders', async () => {
@@ -368,7 +425,7 @@ test('classes list renders', async () => {
       route={route('Classes', roleParams)}
     />,
   );
-  expect(text(renderer)).toContain('C05');
+  expect(text(renderer)).toContain('Class 5');
   expect(text(renderer)).toContain('Deactivate');
   await dispose(renderer);
 });
@@ -398,7 +455,7 @@ test('create class validates required fields', async () => {
       .props.onPress();
   });
   expect(text(renderer)).toContain('Name is required.');
-  expect(text(renderer)).toContain('Use uppercase letters');
+  expect(text(renderer)).toContain('Name is required.');
   await dispose(renderer);
 });
 
@@ -439,7 +496,7 @@ test('create section validates required fields', async () => {
       .props.onPress();
   });
   expect(text(renderer)).toContain('Name is required.');
-  expect(text(renderer)).toContain('Use uppercase letters');
+  expect(text(renderer)).toContain('Name is required.');
   await dispose(renderer);
 });
 
@@ -468,7 +525,7 @@ test('create subject validates required fields', async () => {
       .props.onPress();
   });
   expect(text(renderer)).toContain('Name is required.');
-  expect(text(renderer)).toContain('Use uppercase letters');
+  expect(text(renderer)).toContain('Optional school subject code.');
   await dispose(renderer);
 });
 
@@ -500,7 +557,7 @@ test('class-subject assignment renders', async () => {
     }),
   ).toBeTruthy();
   expect(text(renderer)).toContain('Assigned');
-  expect(text(renderer)).toContain('Save Assignments');
+  expect(text(renderer)).toContain('Save Teacher Assignments');
   await dispose(renderer);
 });
 

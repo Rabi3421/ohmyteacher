@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { StyleSheet, View } from 'react-native';
 
+import { AcademicContextBar } from '../../components/academic/AcademicContextBar';
 import { AppButton } from '../../components/common/AppButton';
 import { AppCard } from '../../components/common/AppCard';
 import { AppHeader } from '../../components/common/AppHeader';
@@ -8,105 +9,43 @@ import { AppScreen } from '../../components/common/AppScreen';
 import { AppText } from '../../components/common/AppText';
 import { ErrorState } from '../../components/feedback/ErrorState';
 import { LoadingView } from '../../components/feedback/LoadingView';
-import { FeeContextBar } from '../../components/feeSetup/FeeComponents';
 import { ROUTES } from '../../constants/routes';
-import { useFeeSetupAccess } from '../../hooks/useFeeSetupAccess';
 import type { RoleScreenProps } from '../../navigation/navigationTypes';
 import {
-  useAuthStore,
-  useFeeSetupStore,
-  useOrganizationStore,
+  useAcademicStore,
+  useCurrentFeeConfigurationStore,
 } from '../../store';
 
 export function FeeSetupScreen({
   navigation,
   route,
 }: RoleScreenProps<'FeeSetup'>) {
-  const membership = useAuthStore(state => state.activeMembership);
-  const school = useOrganizationStore(state => state.currentSchool);
-  const branches = useOrganizationStore(state => state.branches.items);
-  const sessions = useOrganizationStore(state => state.academicSessions);
-  const loadSchool = useOrganizationStore(state => state.loadSchool);
-  const loadBranches = useOrganizationStore(state => state.loadBranches);
-  const loadSessions = useOrganizationStore(state => state.loadAcademicSessions);
-  const [branchId, setBranchId] = useState(
-    route.params.branchId ?? membership?.branchId,
+  const context = useAcademicStore(state => state.context);
+  const sessionStatus = useAcademicStore(state => state.sessionStatus);
+  const summary = useCurrentFeeConfigurationStore(state => state.summary);
+  const error = useCurrentFeeConfigurationStore(state => state.error);
+  const loading = useCurrentFeeConfigurationStore(
+    state => state.isLoadingSummary,
   );
-  const [sessionId, setSessionId] = useState(route.params.academicSessionId);
-  const summary = useFeeSetupStore(state => state.summary);
-  const error = useFeeSetupStore(state => state.error);
-  const isLoading = useFeeSetupStore(state => state.isLoadingSummary);
-  const setContext = useFeeSetupStore(state => state.setContext);
-  const loadSummary = useFeeSetupStore(state => state.loadSummary);
-  const branch = branches.find(item => item.id === branchId);
-  const session = sessions.find(item => item.id === sessionId);
-  const access = useFeeSetupAccess(route.params.schoolId, branchId);
+  const setContext = useCurrentFeeConfigurationStore(state => state.setContext);
+  const loadSummary = useCurrentFeeConfigurationStore(state => state.loadSummary);
+  const selected = context?.schoolId === route.params.schoolId ? context : null;
 
   useEffect(() => {
-    Promise.all([
-      loadSchool(route.params.schoolId),
-      loadBranches(route.params.schoolId),
-      loadSessions(route.params.schoolId),
-    ]).catch(() => undefined);
-  }, [loadBranches, loadSchool, loadSessions, route.params.schoolId]);
-
-  useEffect(() => {
-    if (!branchId) {
-      const available = branches.find(
-        item =>
-          item.status === 'ACTIVE' &&
-          (!membership?.branchId || item.id === membership.branchId),
-      );
-      if (available) setBranchId(available.id);
-    }
-    if (!sessionId) {
-      const available =
-        sessions.find(item => item.status === 'ACTIVE') ??
-        sessions.find(item => item.status === 'UPCOMING') ??
-        sessions[0];
-      if (available) setSessionId(available.id);
-    }
-  }, [branchId, branches, membership?.branchId, sessionId, sessions]);
-
-  useEffect(() => {
-    if (!branch || !session) return;
-    setContext(
-      {
-        academicSessionId: session.id,
-        branchId: branch.id,
-        schoolId: route.params.schoolId,
-      },
-      session.status,
-    );
+    if (!selected) return;
+    setContext(selected, sessionStatus);
     loadSummary().catch(() => undefined);
-  }, [
-    branch,
-    loadSummary,
-    route.params.schoolId,
-    session,
-    setContext,
-  ]);
+  }, [loadSummary, selected, sessionStatus, setContext]);
 
-  if (!branch || !session) {
-    return (
-      <AppScreen testID="fee-setup-screen">
-        <LoadingView message="Resolving Fee Setup context…" />
-      </AppScreen>
-    );
-  }
-
-  const contextParams = {
-    academicSessionId: session.id,
-    branchId: branch.id,
-    schoolId: route.params.schoolId,
-    sessionStatus: session.status,
-  };
+  const params = selected
+    ? { ...selected, sessionStatus: sessionStatus ?? 'UPCOMING' }
+    : null;
 
   return (
     <AppScreen
       contentContainerStyle={styles.content}
-      onRefresh={loadSummary}
-      refreshing={isLoading}
+      onRefresh={selected ? loadSummary : undefined}
+      refreshing={loading}
       scrollable
       testID="fee-setup-screen"
     >
@@ -114,60 +53,28 @@ export function FeeSetupScreen({
         <AppHeader
           includeSafeArea={false}
           onBackPress={navigation.goBack}
-          subtitle="Configuration only — no dues or collections"
-          title="Fee Setup"
+          subtitle="Live configuration only — no Student liabilities"
+          title="Fee Configuration"
         />
-        <FeeContextBar
-          branch={branch.name}
-          closed={session.status === 'CLOSED'}
-          school={school?.name ?? route.params.schoolId}
-          session={session.name}
+        <AcademicContextBar
+          initialBranchId={route.params.branchId}
+          initialSessionId={route.params.academicSessionId}
+          schoolId={route.params.schoolId}
         />
-        <AppText variant="label">Branch</AppText>
-        <View style={styles.options}>
-          {branches
-            .filter(
-              item =>
-                item.status === 'ACTIVE' &&
-                (!membership?.branchId || item.id === membership.branchId),
-            )
-            .map(item => (
-              <AppButton
-                key={item.id}
-                onPress={() => setBranchId(item.id)}
-                title={item.name}
-                variant={item.id === branch.id ? 'primary' : 'outline'}
-              />
-            ))}
-        </View>
-        <AppText style={styles.selectorLabel} variant="label">
-          Academic Session
-        </AppText>
-        <View style={styles.options}>
-          {sessions.map(item => (
-            <AppButton
-              key={item.id}
-              onPress={() => setSessionId(item.id)}
-              title={`${item.name}${item.status === 'CLOSED' ? ' · Closed' : ''}`}
-              variant={item.id === session.id ? 'primary' : 'outline'}
-            />
-          ))}
-        </View>
-        {error && !summary ? (
+        {!selected ? (
+          <LoadingView message="Resolving live Branch and academic Session…" />
+        ) : error && !summary ? (
           <ErrorState message={error.message} onRetry={loadSummary} />
-        ) : summary ? (
+        ) : !summary ? (
+          <LoadingView message="Loading live fee configuration…" />
+        ) : (
           <>
             <View style={styles.grid}>
               {[
                 ['Active Fee Heads', summary.activeFeeHeads],
-                ['Classes with Structure', summary.classesWithStructure],
-                ['Classes without Structure', summary.classesWithoutStructure],
-                [
-                  'Custom Assignments',
-                  summary.studentsWithCustomAssignment,
-                ],
-                ['Active Discounts', summary.activeDiscountDefinitions],
-                ['Active Fine Rules', summary.activeFineRules],
+                ['Configured Classes', summary.configuredClasses],
+                ['Classes without Items', summary.unconfiguredClasses],
+                ['Structure Items', summary.structureItems],
               ].map(([label, value]) => (
                 <AppCard key={String(label)} style={styles.summaryCard}>
                   <AppText variant="heading2">{String(value)}</AppText>
@@ -175,104 +82,55 @@ export function FeeSetupScreen({
                 </AppCard>
               ))}
             </View>
-            {session.status === 'CLOSED' ? (
-              <AppCard style={styles.warning} variant="outlined">
-                <AppText variant="title">Closed session is read-only</AppText>
+            {sessionStatus === 'CLOSED' ? (
+              <AppCard style={styles.notice} variant="outlined">
+                <AppText variant="title">Closed Session · Read only</AppText>
                 <AppText>
-                  Structures, historical assignments, and previews remain
-                  available. Every mutation is blocked.
+                  Existing Class fee blueprints remain visible. The frontend
+                  blocks changes because Django does not enforce inactive
+                  Session state on Structure Items.
                 </AppText>
               </AppCard>
-            ) : summary.activeFeeHeads === 0 ||
-              summary.classesWithoutStructure > 0 ||
-              summary.enrollmentsWithoutAssignment > 0 ? (
-              <AppCard style={styles.warning} variant="outlined">
-                <AppText variant="title">Setup warnings</AppText>
-                {summary.activeFeeHeads === 0 ? (
-                  <AppText>No active Fee Heads configured.</AppText>
-                ) : null}
-                {summary.classesWithoutStructure > 0 ? (
-                  <AppText>
-                    {summary.classesWithoutStructure} classes have no active
-                    Fee Structure.
-                  </AppText>
-                ) : null}
-                {summary.enrollmentsWithoutAssignment > 0 ? (
-                  <AppText>
-                    {summary.enrollmentsWithoutAssignment} active enrollments
-                    have no Fee Assignment.
-                  </AppText>
-                ) : null}
-              </AppCard>
             ) : null}
+            <View style={styles.actions}>
+              <AppButton
+                onPress={() => params && navigation.navigate(ROUTES.FEE_HEADS, params)}
+                title="Fee Heads"
+              />
+              <AppButton
+                onPress={() => params && navigation.navigate(ROUTES.FEE_STRUCTURES, params)}
+                title="Class Fee Blueprints"
+                variant="outline"
+              />
+            </View>
+            <AppCard style={styles.notice} variant="outlined">
+              <AppText variant="title">Unavailable in the Django contract</AppText>
+              <AppText>
+                Discounts, fine rules, Structure activation, copying, preview,
+                and Student assignments have no configuration endpoint. They
+                are not simulated on these live screens.
+              </AppText>
+            </AppCard>
+            <AppCard style={styles.notice} variant="outlined">
+              <AppText variant="title">Fee dues remain demo-isolated</AppText>
+              <AppText>
+                Saving configuration does not generate dues, balances, ledger
+                entries, payments, or receipts. Live IDs are never passed into
+                the later mock fee-due repository.
+              </AppText>
+            </AppCard>
           </>
-        ) : (
-          <LoadingView message="Loading Fee Setup summary…" />
         )}
-        <View style={styles.actions}>
-          <AppButton
-            onPress={() =>
-              navigation.navigate(
-                ROUTES.FEE_OUTSTANDING_DASHBOARD,
-                contextParams,
-              )
-            }
-            title="View Generated Fee Dues"
-          />
-          <AppButton
-            onPress={() => navigation.navigate(ROUTES.FEE_HEADS, contextParams)}
-            title={access.canManageHeads ? 'Manage Fee Heads' : 'View Fee Heads'}
-            variant="outline"
-          />
-          <AppButton
-            onPress={() =>
-              navigation.navigate(ROUTES.FEE_STRUCTURES, contextParams)
-            }
-            title={access.canManageStructures ? 'Manage Fee Structures' : 'View Fee Structures'}
-            variant="outline"
-          />
-          <AppButton
-            onPress={() =>
-              navigation.navigate(
-                ROUTES.STUDENT_FEE_ASSIGNMENTS,
-                contextParams,
-              )
-            }
-            title={access.canManageAssignments ? 'Manage Student Assignments' : 'View Student Assignments'}
-            variant="outline"
-          />
-          {access.canManageDiscounts ? (
-            <AppButton
-              onPress={() =>
-                navigation.navigate(
-                  ROUTES.DISCOUNT_DEFINITIONS,
-                  contextParams,
-                )
-              }
-              title="Manage Discounts"
-              variant="outline"
-            />
-          ) : null}
-          {access.canManageFineRules ? (
-            <AppButton
-              onPress={() => navigation.navigate(ROUTES.FINE_RULES, contextParams)}
-              title="Manage Fine Rules"
-              variant="outline"
-            />
-          ) : null}
-        </View>
       </View>
     </AppScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  actions: { gap: 10, marginTop: 20 },
+  actions: { gap: 10, marginTop: 18 },
   content: { paddingBottom: 32 },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 18 },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   maxWidth: { alignSelf: 'center', maxWidth: 800, width: '100%' },
-  options: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  selectorLabel: { marginTop: 12 },
-  summaryCard: { minWidth: 155 },
-  warning: { marginTop: 16 },
+  notice: { gap: 6, marginTop: 16 },
+  summaryCard: { minWidth: 150 },
 });

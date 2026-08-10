@@ -13,7 +13,7 @@ import { useNetworkStatus } from '../../hooks/useNetworkStatus';
 import type { AuthScreenProps } from '../../navigation/navigationTypes';
 import { useAuthStore } from '../../store';
 import {
-  isMobileOrEmail,
+  isIndianMobile,
   normalizeIndianMobile,
 } from '../../utils/validation';
 
@@ -31,12 +31,9 @@ export function PlatformAdminLoginScreen({
   const offline = network.isConnected === false;
 
   const handleSubmit = async (): Promise<void> => {
-    const trimmed = identifier.trim();
-    const normalized = trimmed.includes('@')
-      ? trimmed.toLowerCase()
-      : normalizeIndianMobile(trimmed);
-    if (!isMobileOrEmail(normalized)) {
-      setFieldError('Enter a valid Indian mobile number or email address.');
+    const normalized = normalizeIndianMobile(identifier);
+    if (!isIndianMobile(normalized)) {
+      setFieldError('Enter a valid 10-digit Indian mobile number.');
       return;
     }
 
@@ -70,8 +67,8 @@ export function PlatformAdminLoginScreen({
           autoCapitalize="none"
           autoCorrect={false}
           error={fieldError ?? apiError?.fieldErrors?.identifier}
-          keyboardType="email-address"
-          label="Mobile Number or Email"
+          keyboardType="phone-pad"
+          label="Mobile Number"
           leftIcon={
             <AppIcon
               color={theme.colors.textSecondary}
@@ -79,12 +76,14 @@ export function PlatformAdminLoginScreen({
               size={theme.iconSizes.sm}
             />
           }
+          maxLength={10}
           onChangeText={value => {
-            setIdentifier(value);
+            setIdentifier(normalizeIndianMobile(value));
             setFieldError(undefined);
           }}
-          placeholder="admin@ohmyteacher.in"
+          placeholder="98765 43210"
           required
+          textContentType="telephoneNumber"
           value={identifier}
         />
         {offline ? (
@@ -93,7 +92,7 @@ export function PlatformAdminLoginScreen({
           <InlineError message={apiError.message} />
         ) : null}
         <AppButton
-          disabled={offline}
+          disabled={offline || isLoading}
           fullWidth
           loading={isLoading}
           onPress={handleSubmit}

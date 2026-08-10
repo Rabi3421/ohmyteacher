@@ -4,6 +4,7 @@ import ReactTestRenderer from 'react-test-renderer';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import type { UserMembership } from '../../src/models/auth';
+import type { CurrentStudent } from '../../src/models/currentStudent';
 import type {
   GuardianDetails,
   StudentAdmissionDraft,
@@ -23,6 +24,10 @@ import { StudentSelfProfileScreen } from '../../src/screens/student/StudentSelfP
 import { StudentsScreen } from '../../src/screens/student/StudentsScreen';
 import { TransferStudentScreen } from '../../src/screens/student/TransferStudentScreen';
 import { authStore, INITIAL_AUTH_STATE } from '../../src/store/auth/authStore';
+import { academicStore, INITIAL_ACADEMIC_STATE } from '../../src/store/academic/academicStore';
+import { currentStudentStore, INITIAL_CURRENT_STUDENT_STATE } from '../../src/store/student/currentStudentStore';
+import { currentOrganizationStore, INITIAL_CURRENT_ORGANIZATION_STATE } from '../../src/store/organization/currentOrganizationStore';
+import { organizationStore, INITIAL_ORGANIZATION_STATE } from '../../src/store/organization/organizationStore';
 import {
   INITIAL_STUDENT_STATE,
   studentStore,
@@ -169,6 +174,24 @@ const validDraft: StudentAdmissionDraft = {
   },
   step: 5,
 };
+const currentStudent: CurrentStudent = {
+  address: '10 Education Road, Bhubaneswar',
+  admissionDate: '2026-04-01',
+  admissionNumber: 'ADM-2026-0001',
+  branchId: '11',
+  classId: '21',
+  createdAt: '2026-04-01T00:00:00.000Z',
+  dateOfBirth: '2015-05-14',
+  gender: 'female',
+  id: '31',
+  name: 'Test Student',
+  parentEmail: 'parent@example.test',
+  parentName: 'Test Parent',
+  parentPhoneNumber: '9000000001',
+  rollNumber: '7',
+  sectionId: '41',
+  status: 'active',
+};
 
 let mountedRenderer: ReactTestRenderer.ReactTestRenderer | null = null;
 
@@ -241,6 +264,33 @@ beforeEach(() => {
     },
   });
   userManagementStore.setState(INITIAL_USER_MANAGEMENT_STATE);
+  academicStore.setState({
+    ...INITIAL_ACADEMIC_STATE,
+    loadClasses: jest.fn().mockResolvedValue(undefined),
+    loadSections: jest.fn().mockResolvedValue(undefined),
+    setClassQuery: jest.fn(),
+    setSectionQuery: jest.fn(),
+  });
+  currentOrganizationStore.setState({
+    ...INITIAL_CURRENT_ORGANIZATION_STATE,
+    loadBranches: jest.fn().mockResolvedValue(undefined),
+    loadCurrentSchool: jest.fn().mockResolvedValue(true),
+  });
+  organizationStore.setState({
+    ...INITIAL_ORGANIZATION_STATE,
+    loadAcademicSessions: jest.fn().mockResolvedValue(undefined),
+  });
+  currentStudentStore.setState({
+    ...INITIAL_CURRENT_STUDENT_STATE,
+    current: currentStudent,
+    items: [currentStudent],
+    loadMyChildren: jest.fn().mockResolvedValue(true),
+    loadStudent: jest.fn().mockResolvedValue(true),
+    loadStudents: jest.fn().mockResolvedValue(true),
+    myChildren: [currentStudent],
+    setQuery: jest.fn(),
+    updateStatus: jest.fn().mockResolvedValue(true),
+  });
   studentStore.setState({
     ...INITIAL_STUDENT_STATE,
     access: details.access,
@@ -305,25 +355,17 @@ describe('student and Parent screens', () => {
         route={route('Students', { schoolId: 'school-omt' })}
       />,
     );
-    expect(text(renderer)).toContain('Rahul Patel');
-    expect(text(renderer)).toContain('OMT-2026-0001');
+    expect(text(renderer)).toContain('Test Student');
+    expect(text(renderer)).toContain('ADM-2026-0001');
     expect(
       renderer.root.findAllByProps({
-        placeholder: 'Search name, admission, roll, or guardian mobile',
+        placeholder: 'Search name, admission number, or parent phone',
       }).length,
     ).toBeGreaterThan(0);
   });
 
   it('renders the student list empty state', async () => {
-    studentStore.setState({
-      students: {
-        items: [],
-        page: 1,
-        pageSize: 20,
-        totalItems: 0,
-        totalPages: 0,
-      },
-    });
+    currentStudentStore.setState({ items: [] });
     const renderer = await render(
       <StudentsScreen
         navigation={navigation<'Students'>()}
@@ -333,71 +375,38 @@ describe('student and Parent screens', () => {
     expect(text(renderer)).toContain('No students found');
   });
 
-  it('validates admission Student step 1', async () => {
-    studentStore.setState({
-      admissionDraft: {
-        ...validDraft,
-        guardians: [],
-        profile: {
-          ...validDraft.profile,
-          address: {
-            city: '',
-            country: 'India',
-            line1: '',
-            pinCode: '',
-            state: '',
-          },
-          dateOfBirth: '',
-          fullName: '',
-        },
-        step: 1,
-      },
-    });
+  it('requires an academic context for admission', async () => {
     const renderer = await render(
       <CreateStudentScreen
         navigation={navigation<'CreateStudent'>()}
         route={route('CreateStudent', { schoolId: 'school-omt' })}
       />,
     );
-    await press(renderer, 'Continue');
-    expect(text(renderer)).toContain('Student name is required.');
+    await press(renderer, 'Review Admission');
+    expect(text(renderer)).toContain('Select a branch and academic session.');
   });
 
-  it('validates the guardian admission step', async () => {
-    studentStore.setState({
-      admissionDraft: { ...validDraft, guardians: [], step: 2 },
-    });
+  it('requires confirmed class and section placement', async () => {
+    academicStore.setState({ context: { academicSessionId: '12', branchId: '11', schoolId: 'school-omt' } });
     const renderer = await render(
       <CreateStudentScreen
         navigation={navigation<'CreateStudent'>()}
         route={route('CreateStudent', { schoolId: 'school-omt' })}
       />,
     );
-    await press(renderer, 'Continue');
-    expect(text(renderer)).toContain('Guardian name is required.');
+    await press(renderer, 'Review Admission');
+    expect(text(renderer)).toContain('Select an active class and section.');
   });
 
-  it('validates the enrollment admission step', async () => {
-    studentStore.setState({
-      admissionDraft: {
-        ...validDraft,
-        enrollment: {
-          academicSessionId: '',
-          branchId: '',
-          classId: '',
-          sectionId: '',
-        },
-        step: 3,
-      },
-    });
+  it('shows the exact parent-login phone field', async () => {
     const renderer = await render(
       <CreateStudentScreen
         navigation={navigation<'CreateStudent'>()}
         route={route('CreateStudent', { schoolId: 'school-omt' })}
       />,
     );
-    await press(renderer, 'Continue');
-    expect(text(renderer)).toContain('Branch is required.');
+    expect(renderer.root.findAllByProps({ label: 'Parent Login Phone' })).toHaveLength(1);
+    expect(text(renderer)).toContain('One atomic student + parent-login link operation');
   });
 
   it('renders the full admission review', async () => {
@@ -429,13 +438,13 @@ describe('student and Parent screens', () => {
         navigation={navigation<'StudentDetails'>()}
         route={route('StudentDetails', {
           schoolId: 'school-omt',
-          studentId: profile.id,
+          studentId: currentStudent.id,
         })}
       />,
     );
     expect(text(renderer)).toContain('Student Details');
-    expect(text(renderer)).toContain('Current Enrollment');
-    expect(text(renderer)).toContain('Guardian Summary');
+    expect(text(renderer)).toContain('Confirmed backend boundaries');
+    expect(text(renderer)).toContain('Test Student');
   });
 
   it('renders and protects the guardian list', async () => {
@@ -509,7 +518,7 @@ describe('student and Parent screens', () => {
       />,
     );
     expect(text(renderer)).toContain('My Children');
-    expect(text(renderer)).toContain('Rahul Patel');
+    expect(text(renderer)).toContain('Test Student');
   });
 
   it('renders a read-only Parent child detail', async () => {
@@ -519,12 +528,12 @@ describe('student and Parent screens', () => {
         route={route('ParentChildDetails', {
           parentMembershipId: 'membership-parent',
           schoolId: 'school-omt',
-          studentId: profile.id,
+          studentId: currentStudent.id,
         })}
       />,
     );
-    expect(text(renderer)).toContain('Read-only school record');
-    expect(text(renderer)).toContain('Family Contacts');
+    expect(text(renderer)).toContain('Read-only record from /my-children/');
+    expect(text(renderer)).toContain('Test Student');
     expect(text(renderer)).not.toContain('Edit');
   });
 

@@ -5,9 +5,8 @@ import type {
   AuthSession,
   AuthTokens,
   AuthUser,
+  LoginOtpInput,
   OtpRequest,
-  PlatformOtpInput,
-  SchoolOtpInput,
 } from '../../models/auth';
 import type { ApiResponse } from '../../models/common';
 
@@ -18,8 +17,7 @@ export interface VerifyOtpInput {
 }
 
 export interface AuthService {
-  requestSchoolOtp(input: SchoolOtpInput): Promise<ApiResponse<OtpRequest>>;
-  requestPlatformOtp(input: PlatformOtpInput): Promise<ApiResponse<OtpRequest>>;
+  requestOtp(input: LoginOtpInput): Promise<ApiResponse<OtpRequest>>;
   resendOtp(phoneNumber: string): Promise<ApiResponse<OtpRequest>>;
   verifyOtp(input: VerifyOtpInput): Promise<ApiResponse<AuthSession>>;
   getCurrentUser(): Promise<ApiResponse<AuthIdentity>>;

@@ -36,9 +36,9 @@ export const palette = {
 } as const;
 
 export const lightColors = {
-  primary: palette.indigo600,
-  primaryPressed: palette.indigo500,
-  primarySubtle: palette.indigo50,
+  primary: palette.blue500,
+  primaryPressed: palette.blue700,
+  primarySubtle: palette.blue50,
   secondary: palette.cyan500,
   secondarySubtle: '#ECFEFF',
   background: palette.slate50,
@@ -105,9 +105,9 @@ export type AppColors = {
 // later. Its visual tuning is intentionally deferred beyond Phase 1.
 export const darkColors: AppColors = {
   ...lightColors,
-  primary: '#818CF8',
-  primaryPressed: '#A5B4FC',
-  primarySubtle: '#252A55',
+  primary: '#60A5FA',
+  primaryPressed: '#93C5FD',
+  primarySubtle: '#172E54',
   secondary: '#22D3EE',
   secondarySubtle: '#164E63',
   background: '#090F1D',

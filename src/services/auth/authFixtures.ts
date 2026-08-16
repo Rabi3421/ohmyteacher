@@ -1,8 +1,4 @@
-import type {
-  AuthSession,
-  AuthUser,
-  UserMembership,
-} from '../../models/auth';
+import type { AuthSession, AuthUser, UserMembership } from '../../models/auth';
 
 export const MOCK_AUTH = {
   otp: '123456',
@@ -108,10 +104,15 @@ export const SCHOOL_AUTH_FIXTURES: Record<string, AuthFixture> = {
     key: 'branch-admin',
     user: user('user-branch-admin', 'Rohit Das', '9876543215'),
     memberships: [
-      membership('membership-branch-admin', 'user-branch-admin', 'BRANCH_ADMIN', {
-        branchId: 'branch-main',
-        branchName: 'Main Branch',
-      }),
+      membership(
+        'membership-branch-admin',
+        'user-branch-admin',
+        'BRANCH_ADMIN',
+        {
+          branchId: 'branch-main',
+          branchName: 'Main Branch',
+        },
+      ),
     ],
   },
   '9876543216': {
@@ -138,34 +139,14 @@ export const SCHOOL_AUTH_FIXTURES: Record<string, AuthFixture> = {
     key: 'inactive-membership',
     user: user('user-inactive-membership', 'Kavya Joshi', '9876543218'),
     memberships: [
-      membership(
-        'membership-inactive',
-        'user-inactive-membership',
-        'PARENT',
-        { status: 'INACTIVE' },
-      ),
+      membership('membership-inactive', 'user-inactive-membership', 'PARENT', {
+        status: 'INACTIVE',
+      }),
     ],
   },
 };
 
 export const PLATFORM_AUTH_FIXTURES: Record<string, AuthFixture> = {
-  'admin@ohmyteacher.in': {
-    key: 'super-admin',
-    user: {
-      email: 'admin@ohmyteacher.in',
-      id: 'user-super-admin',
-      name: 'Platform Administrator',
-      status: 'ACTIVE',
-    },
-    memberships: [
-      {
-        id: 'membership-super-admin',
-        role: 'SUPER_ADMIN',
-        status: 'ACTIVE',
-        userId: 'user-super-admin',
-      },
-    ],
-  },
   '9999999999': {
     key: 'super-admin-mobile',
     user: user('user-super-admin-mobile', 'Platform Admin', '9999999999'),

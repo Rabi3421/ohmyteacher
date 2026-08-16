@@ -9,9 +9,8 @@ import type {
   AuthTokens,
   AuthUser,
   InactiveReason,
+  LoginOtpInput,
   PendingOtpRequest,
-  PlatformOtpInput,
-  SchoolOtpInput,
   UserMembership,
 } from '../../models/auth';
 import type { ApiError } from '../../services/api/apiError';
@@ -50,8 +49,7 @@ export interface AuthState {
 
 export interface AuthActions {
   initializeAuth: () => Promise<void>;
-  requestSchoolOtp: (input: SchoolOtpInput) => Promise<boolean>;
-  requestPlatformOtp: (input: PlatformOtpInput) => Promise<boolean>;
+  requestOtp: (input: LoginOtpInput) => Promise<boolean>;
   resendOtp: () => Promise<boolean>;
   verifyOtp: (otp: string) => Promise<boolean>;
   loadOnboarding: () => Promise<void>;
@@ -133,12 +131,13 @@ function normalizeError(error: unknown): ApiError {
 }
 
 function phoneFromPending(pending: PendingOtpRequest): string {
-  return pending.context.kind === 'school'
-    ? pending.context.input.mobile
-    : pending.context.input.identifier;
+  return pending.context.input.mobile;
 }
 
-function onboardingComplete(user: AuthUser, school: AuthSchool | undefined): boolean {
+function onboardingComplete(
+  user: AuthUser,
+  school: AuthSchool | undefined,
+): boolean {
   return Boolean(user.name.trim() && school?.name.trim());
 }
 
@@ -266,31 +265,24 @@ export function createAuthStore({
         status: needsOnboarding
           ? 'onboardingRequired'
           : selectedMembership
-            ? 'authenticated'
-            : 'membershipRequired',
+          ? 'authenticated'
+          : 'membershipRequired',
         unsupportedRole: null,
         user: session.user,
       });
     }
 
-    async function requestOtp(
-      context:
-        | { kind: 'school'; input: SchoolOtpInput }
-        | { kind: 'platform'; input: PlatformOtpInput },
-    ): Promise<boolean> {
+    async function requestLoginOtp(input: LoginOtpInput): Promise<boolean> {
       if (get().isLoading) return false;
       set({ error: null, isLoading: true });
       try {
-        const response =
-          context.kind === 'school'
-            ? await service.requestSchoolOtp(context.input)
-            : await service.requestPlatformOtp(context.input);
+        const response = await service.requestOtp(input);
         set({
           error: null,
           isLoading: false,
           pendingOtpRequest: {
             ...response.data,
-            context,
+            context: { input, kind: 'login' },
             requestedAt: new Date().toISOString(),
           },
           status: 'otpRequired',
@@ -334,7 +326,10 @@ export function createAuthStore({
         });
       } catch (error) {
         const normalized = normalizeError(error);
-        if (normalized.code === 'SESSION_EXPIRED' || normalized.status === 401) {
+        if (
+          normalized.code === 'SESSION_EXPIRED' ||
+          normalized.status === 401
+        ) {
           await clearStoredSession();
           set({
             ...INITIAL_AUTH_STATE,
@@ -368,12 +363,8 @@ export function createAuthStore({
       initializeAuth: restoreOnce,
       restoreSession: restoreOnce,
 
-      requestSchoolOtp(input) {
-        return requestOtp({ input, kind: 'school' });
-      },
-
-      requestPlatformOtp(input) {
-        return requestOtp({ input, kind: 'platform' });
+      requestOtp(input) {
+        return requestLoginOtp(input);
       },
 
       async resendOtp() {
@@ -489,7 +480,8 @@ export function createAuthStore({
             throw new ApiClientError({
               code: 'ONBOARDING_SESSION_MISSING',
               kind: 'authentication',
-              message: 'Your session could not be restored. Please sign in again.',
+              message:
+                'Your session could not be restored. Please sign in again.',
               status: 401,
             });
           }
@@ -498,16 +490,18 @@ export function createAuthStore({
             user: currentUser,
           };
           if (identity.user.name.trim() !== input.name.trim()) {
-            identity = (await service.updateCurrentUser(input.name.trim())).data;
+            identity = (await service.updateCurrentUser(input.name.trim()))
+              .data;
             set({ memberships: identity.memberships, user: identity.user });
           }
 
           await service.updateCurrentSchool(input.school);
-          const [confirmedIdentity, confirmedSchool, stored] = await Promise.all([
-            service.getCurrentUser(),
-            service.getCurrentSchool(),
-            sessionStorage.read(),
-          ]);
+          const [confirmedIdentity, confirmedSchool, stored] =
+            await Promise.all([
+              service.getCurrentUser(),
+              service.getCurrentSchool(),
+              sessionStorage.read(),
+            ]);
           if (!stored) {
             await get().expireSession();
             return false;
@@ -533,7 +527,9 @@ export function createAuthStore({
       },
 
       async selectMembership(membershipId) {
-        const membership = get().memberships.find(item => item.id === membershipId);
+        const membership = get().memberships.find(
+          item => item.id === membershipId,
+        );
         if (!membership || membership.status !== 'ACTIVE') {
           set({
             error: {

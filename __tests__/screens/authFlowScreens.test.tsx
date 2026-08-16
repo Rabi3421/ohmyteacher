@@ -8,14 +8,10 @@ import type {
   RoleStackParamList,
 } from '../../src/navigation/navigationTypes';
 import { OtpVerificationScreen } from '../../src/screens/auth/OtpVerificationScreen';
-import { PlatformAdminLoginScreen } from '../../src/screens/auth/PlatformAdminLoginScreen';
-import { SchoolLoginScreen } from '../../src/screens/auth/SchoolLoginScreen';
+import { LoginScreen } from '../../src/screens/auth/LoginScreen';
 import { WorkspaceSelectionScreen } from '../../src/screens/auth/WorkspaceSelectionScreen';
 import { RoleLandingScreen } from '../../src/screens/role/RoleLandingScreen';
-import {
-  authStore,
-  INITIAL_AUTH_STATE,
-} from '../../src/store/auth/authStore';
+import { authStore, INITIAL_AUTH_STATE } from '../../src/store/auth/authStore';
 
 jest.mock('react-native-keychain', () => ({
   getAllGenericPasswordServices: jest.fn().mockResolvedValue([]),
@@ -53,68 +49,37 @@ beforeEach(() => {
   });
 });
 
-test('school login requires only a valid phone before requesting OTP', async () => {
+test('login requires a valid mobile number before requesting OTP', async () => {
   const navigation = {
     goBack: jest.fn(),
     navigate: jest.fn(),
     replace: jest.fn(),
   } as unknown as NativeStackScreenProps<
     AuthStackParamList,
-    'SchoolLogin'
+    'Login'
   >['navigation'];
-  const route = { key: 'SchoolLogin-test', name: 'SchoolLogin' as const };
+  const route = { key: 'Login-test', name: 'Login' as const };
   let renderer: ReactTestRenderer.ReactTestRenderer;
 
   await ReactTestRenderer.act(async () => {
     renderer = ReactTestRenderer.create(
-      withSafeArea(
-        <SchoolLoginScreen navigation={navigation} route={route} />,
-      ),
+      withSafeArea(<LoginScreen navigation={navigation} route={route} />),
     );
   });
   await ReactTestRenderer.act(async () => {
-    await renderer!.root.findByProps({ accessibilityLabel: 'Request OTP' }).props.onPress();
+    await renderer!.root
+      .findByProps({ accessibilityLabel: 'Request OTP' })
+      .props.onPress();
   });
 
   expect(
     renderer!.root.findAll(
       node =>
-        node.props.children ===
-        'Enter a valid 10-digit Indian mobile number.',
+        node.props.children === 'Enter a valid 10-digit Indian mobile number.',
     ).length,
   ).toBeGreaterThan(0);
-  expect(JSON.stringify(renderer!.toJSON())).not.toContain('School Code');
+  expect(JSON.stringify(renderer!.toJSON())).toContain('verified role');
   expect(navigation.navigate).not.toHaveBeenCalled();
-  await ReactTestRenderer.act(async () => renderer!.unmount());
-});
-
-test('platform login is phone-only', async () => {
-  const navigation = {
-    goBack: jest.fn(),
-    navigate: jest.fn(),
-    replace: jest.fn(),
-  } as unknown as NativeStackScreenProps<
-    AuthStackParamList,
-    'PlatformAdminLogin'
-  >['navigation'];
-  const route = {
-    key: 'PlatformAdminLogin-test',
-    name: 'PlatformAdminLogin' as const,
-  };
-  let renderer: ReactTestRenderer.ReactTestRenderer;
-
-  await ReactTestRenderer.act(async () => {
-    renderer = ReactTestRenderer.create(
-      withSafeArea(
-        <PlatformAdminLoginScreen navigation={navigation} route={route} />,
-      ),
-    );
-  });
-
-  const screen = JSON.stringify(renderer!.toJSON());
-  expect(screen).toContain('Mobile Number');
-  expect(screen).not.toContain('Mobile Number or Email');
-  expect(screen).not.toContain('admin@ohmyteacher.in');
   await ReactTestRenderer.act(async () => renderer!.unmount());
 });
 
@@ -123,7 +88,7 @@ test('OTP verification renders the masked destination', async () => {
     pendingOtpRequest: {
       context: {
         input: { mobile: '9876543210' },
-        kind: 'school',
+        kind: 'login',
       },
       destinationMasked: '+91 ••••••3210',
       expiresInSeconds: 300,
@@ -236,15 +201,20 @@ test('role landing renders the selected membership context', async () => {
 
   await ReactTestRenderer.act(async () => {
     renderer = ReactTestRenderer.create(
-      withSafeArea(
-        <RoleLandingScreen navigation={navigation} route={route} />,
-      ),
+      withSafeArea(<RoleLandingScreen navigation={navigation} route={route} />),
     );
   });
 
   expect(
     renderer!.root.findByProps({ testID: 'role-landing-screen' }),
   ).toBeTruthy();
-  expect(JSON.stringify(renderer!.toJSON())).toContain('Demo Public School');
+  const dashboard = JSON.stringify(renderer!.toJSON());
+  expect(dashboard).toContain('Demo Public School');
+  expect(dashboard).toContain('Quick access');
+  expect(dashboard).toContain('Everything you need in one place');
+  expect(dashboard).not.toContain('Dashboard coming later');
+  expect(
+    renderer!.root.findByProps({ accessibilityLabel: 'Collection Dashboard' }),
+  ).toBeTruthy();
   await ReactTestRenderer.act(async () => renderer!.unmount());
 });

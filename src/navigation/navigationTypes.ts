@@ -5,8 +5,7 @@ import type { ReportExportFormat, ReportType } from '../models/report';
 
 export type AuthStackParamList = {
   Welcome: undefined;
-  SchoolLogin: undefined;
-  PlatformAdminLogin: undefined;
+  Login: undefined;
   OtpVerification: undefined;
   ComponentPreview: undefined;
   Placeholder: { title?: string } | undefined;
@@ -44,6 +43,11 @@ type ReportContextParams = {
 
 export type RoleStackParamList = {
   RoleLanding: { role: AppRole };
+  AcademicsHub: { role: AppRole };
+  FeesHub: { role: AppRole };
+  ExamsHub: { role: AppRole };
+  MoreMenu: { role: AppRole };
+  Profile: { role: AppRole };
   Schools: undefined;
   CreateSchool: undefined;
   SchoolDetails: { schoolId: string };

@@ -1,7 +1,5 @@
 import { ApiClientError } from '../../src/services/api/apiError';
-import {
-  MOCK_AUTH,
-} from '../../src/services/auth/authFixtures';
+import { MOCK_AUTH } from '../../src/services/auth/authFixtures';
 import {
   mockAuthService,
   resetMockAuthService,
@@ -30,9 +28,8 @@ describe('mock authentication scenarios', () => {
     ['9876543217', 'STUDENT'],
   ] as const)('verifies school fixture %s as %s', async (mobile, role) => {
     const request = await finishMockDelay(
-      mockAuthService.requestSchoolOtp({
+      mockAuthService.requestOtp({
         mobile,
-        schoolCode: MOCK_AUTH.schoolCode,
       }),
     );
     const session = await finishMockDelay(
@@ -46,9 +43,8 @@ describe('mock authentication scenarios', () => {
 
   it('returns multiple verified memberships without selecting a role', async () => {
     const request = await finishMockDelay(
-      mockAuthService.requestSchoolOtp({
+      mockAuthService.requestOtp({
         mobile: '9876543212',
-        schoolCode: MOCK_AUTH.schoolCode,
       }),
     );
     const session = await finishMockDelay(
@@ -65,9 +61,8 @@ describe('mock authentication scenarios', () => {
 
   it('includes child context for parent workspaces', async () => {
     const request = await finishMockDelay(
-      mockAuthService.requestSchoolOtp({
+      mockAuthService.requestOtp({
         mobile: '9876543213',
-        schoolCode: MOCK_AUTH.schoolCode,
       }),
     );
     const session = await finishMockDelay(
@@ -84,9 +79,7 @@ describe('mock authentication scenarios', () => {
 
   it('verifies the platform administrator fixture', async () => {
     const request = await finishMockDelay(
-      mockAuthService.requestPlatformOtp({
-        identifier: 'admin@ohmyteacher.in',
-      }),
+      mockAuthService.requestOtp({ mobile: '9999999999' }),
     );
     const session = await finishMockDelay(
       mockAuthService.verifyOtp({
@@ -97,20 +90,18 @@ describe('mock authentication scenarios', () => {
     expect(session.data.memberships[0].role).toBe('SUPER_ADMIN');
   });
 
-  it('normalizes invalid school and OTP errors', async () => {
-    const invalidSchool = mockAuthService.requestSchoolOtp({
-      mobile: '9876543210',
-      schoolCode: 'UNKNOWN',
+  it('normalizes unknown-account and OTP errors', async () => {
+    const unknownAccount = mockAuthService.requestOtp({
+      mobile: '9000000000',
     });
     jest.runOnlyPendingTimers();
-    await expect(invalidSchool).rejects.toMatchObject({
-      code: 'SCHOOL_NOT_FOUND',
+    await expect(unknownAccount).rejects.toMatchObject({
+      code: 'USER_NOT_FOUND',
     });
 
     const request = await finishMockDelay(
-      mockAuthService.requestSchoolOtp({
+      mockAuthService.requestOtp({
         mobile: '9876543210',
-        schoolCode: MOCK_AUTH.schoolCode,
       }),
     );
     const invalidOtp = mockAuthService.verifyOtp({

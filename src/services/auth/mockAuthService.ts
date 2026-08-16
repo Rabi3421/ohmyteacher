@@ -1,9 +1,8 @@
 import type {
   AuthSession,
   AuthTokens,
+  LoginOtpInput,
   OtpRequest,
-  PlatformOtpInput,
-  SchoolOtpInput,
 } from '../../models/auth';
 import type { ApiResponse } from '../../models/common';
 import { ApiClientError } from '../api/apiError';
@@ -33,15 +32,6 @@ function successful<T>(data: T, message: string): ApiResponse<T> {
 
 function maskMobile(mobile: string): string {
   return `+91 ••••••${mobile.slice(-4)}`;
-}
-
-function maskIdentifier(identifier: string): string {
-  if (!identifier.includes('@')) {
-    return maskMobile(identifier);
-  }
-
-  const [name, domain] = identifier.split('@');
-  return `${name.slice(0, 2)}${'•'.repeat(Math.max(2, name.length - 2))}@${domain}`;
 }
 
 function createOtpRequest(
@@ -77,56 +67,24 @@ function fixtureKeyFromToken(token: string, prefix: string): string {
 }
 
 export const mockAuthService: AuthService = {
-  async requestSchoolOtp(
-    input: SchoolOtpInput,
-  ): Promise<ApiResponse<OtpRequest>> {
+  async requestOtp(input: LoginOtpInput): Promise<ApiResponse<OtpRequest>> {
     await mockDelay();
-    if (input.schoolCode !== MOCK_AUTH.schoolCode) {
-      throw new ApiClientError({
-        code: 'SCHOOL_NOT_FOUND',
-        fieldErrors: { schoolCode: 'We could not find this school code.' },
-        message: 'Check the school code and try again.',
-        status: 404,
-      });
-    }
-
-    const fixture = SCHOOL_AUTH_FIXTURES[input.mobile];
+    const fixture =
+      SCHOOL_AUTH_FIXTURES[input.mobile] ??
+      PLATFORM_AUTH_FIXTURES[input.mobile];
     if (!fixture) {
       throw new ApiClientError({
         code: 'USER_NOT_FOUND',
         fieldErrors: {
-          mobile: 'This mobile number is not registered with the school.',
+          mobile: 'No account matches this mobile number.',
         },
-        message: 'No matching school account was found.',
+        message: 'No matching account was found.',
         status: 404,
       });
     }
 
     return successful(
       createOtpRequest(fixture, maskMobile(input.mobile)),
-      'OTP sent successfully.',
-    );
-  },
-
-  async requestPlatformOtp(
-    input: PlatformOtpInput,
-  ): Promise<ApiResponse<OtpRequest>> {
-    await mockDelay();
-    const normalized = input.identifier.trim().toLowerCase();
-    const fixture = PLATFORM_AUTH_FIXTURES[normalized];
-    if (!fixture) {
-      throw new ApiClientError({
-        code: 'USER_NOT_FOUND',
-        fieldErrors: {
-          identifier: 'No platform administrator matches this identifier.',
-        },
-        message: 'No platform administrator account was found.',
-        status: 404,
-      });
-    }
-
-    return successful(
-      createOtpRequest(fixture, maskIdentifier(normalized)),
       'OTP sent successfully.',
     );
   },
@@ -144,7 +102,7 @@ export const mockAuthService: AuthService = {
       });
     }
     return successful(
-      createOtpRequest(fixture, maskIdentifier(phoneNumber)),
+      createOtpRequest(fixture, maskMobile(phoneNumber)),
       'OTP sent successfully.',
     );
   },

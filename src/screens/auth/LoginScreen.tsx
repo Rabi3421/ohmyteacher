@@ -6,76 +6,52 @@ import { AppButton } from '../../components/common/AppButton';
 import { AppInput } from '../../components/common/AppInput';
 import { AppText } from '../../components/common/AppText';
 import { InlineError } from '../../components/feedback/InlineError';
-import { ROUTES } from '../../constants/routes';
 import { useAppTheme } from '../../hooks/useAppTheme';
 import { useNetworkStatus } from '../../hooks/useNetworkStatus';
 import type { AuthScreenProps } from '../../navigation/navigationTypes';
 import { useAuthStore } from '../../store';
-import {
-  isIndianMobile,
-  normalizeIndianMobile,
-} from '../../utils/validation';
+import { isIndianMobile, normalizeIndianMobile } from '../../utils/validation';
 
-interface FieldErrors {
-  mobile?: string;
-}
-
-export function SchoolLoginScreen({
-  navigation,
-}: AuthScreenProps<'SchoolLogin'>) {
+export function LoginScreen({ navigation }: AuthScreenProps<'Login'>) {
   const theme = useAppTheme();
   const network = useNetworkStatus();
-  const requestSchoolOtp = useAuthStore(state => state.requestSchoolOtp);
+  const requestOtp = useAuthStore(state => state.requestOtp);
   const clearError = useAuthStore(state => state.clearError);
   const isLoading = useAuthStore(state => state.isLoading);
   const apiError = useAuthStore(state => state.error);
   const [mobile, setMobile] = useState('');
-  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
+  const [fieldError, setFieldError] = useState<string>();
   const offline = network.isConnected === false;
 
   const handleSubmit = async (): Promise<void> => {
     const normalizedMobile = normalizeIndianMobile(mobile);
-    const nextErrors: FieldErrors = {};
     if (!isIndianMobile(normalizedMobile)) {
-      nextErrors.mobile = 'Enter a valid 10-digit Indian mobile number.';
-    }
-    setFieldErrors(nextErrors);
-    clearError();
-    if (Object.keys(nextErrors).length > 0 || offline) {
+      setFieldError('Enter a valid 10-digit Indian mobile number.');
       return;
     }
 
-    const requested = await requestSchoolOtp({
-      mobile: normalizedMobile,
-    });
-    if (requested) {
-      navigation.navigate(ROUTES.OTP_VERIFICATION);
-    }
+    setFieldError(undefined);
+    clearError();
+    if (offline) return;
+    await requestOtp({ mobile: normalizedMobile });
   };
 
   return (
     <AuthFormLayout
-      footer={
-        <AppButton
-          onPress={() => navigation.replace(ROUTES.PLATFORM_ADMIN_LOGIN)}
-          title="Use Platform Admin Login"
-          variant="ghost"
-        />
-      }
       onBackPress={navigation.goBack}
-      subtitle="Parents, students, and school staff sign in with their registered mobile number."
-      testID="school-login-screen"
-      title="School Login"
+      subtitle="Enter your mobile number. Your verified role determines where you continue."
+      testID="login-screen"
+      title="Login"
     >
       <View style={styles.fields}>
         <AppInput
-          error={fieldErrors.mobile ?? apiError?.fieldErrors?.mobile}
+          error={fieldError ?? apiError?.fieldErrors?.mobile}
           keyboardType="phone-pad"
           label="Mobile Number"
           maxLength={10}
           onChangeText={value => {
             setMobile(normalizeIndianMobile(value));
-            setFieldErrors(current => ({ ...current, mobile: undefined }));
+            setFieldError(undefined);
           }}
           placeholder="98765 43210"
           required
@@ -99,7 +75,7 @@ export function SchoolLoginScreen({
           color={theme.colors.textSecondary}
           variant="caption"
         >
-          We will send a six-digit verification code to your registered mobile.
+          We will send a six-digit verification code to this mobile number.
         </AppText>
       </View>
     </AuthFormLayout>

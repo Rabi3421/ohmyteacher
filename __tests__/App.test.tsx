@@ -3,6 +3,7 @@
  */
 
 import React from 'react';
+import { ScrollView } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import ReactTestRenderer from 'react-test-renderer';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -11,10 +12,7 @@ import App from '../App';
 import { WelcomeRoute } from '../src/navigation/AuthNavigator';
 import type { AuthStackParamList } from '../src/navigation/navigationTypes';
 import { ComponentPreviewScreen } from '../src/screens/foundation/ComponentPreviewScreen';
-import {
-  authStore,
-  INITIAL_AUTH_STATE,
-} from '../src/store/auth/authStore';
+import { authStore, INITIAL_AUTH_STATE } from '../src/store/auth/authStore';
 
 jest.mock('react-native-linear-gradient', () => {
   const { View } = require('react-native');
@@ -57,8 +55,9 @@ test('renders the application startup flow', async () => {
   });
 
   expect(
-    renderer!.root.findByProps({ accessibilityLabel: 'School Login' }),
+    renderer!.root.findByProps({ accessibilityLabel: 'Login' }),
   ).toBeTruthy();
+  expect(renderer!.root.findAllByType(ScrollView)).toHaveLength(0);
   await ReactTestRenderer.act(async () => renderer!.unmount());
 });
 
@@ -89,7 +88,7 @@ test('renders the Component Preview development screen', async () => {
   ).toBeTruthy();
 });
 
-test('routes Welcome actions to login forms without selecting a role', async () => {
+test('routes the single Welcome action to unified login', async () => {
   const navigate = jest.fn();
   const navigation = {
     navigate,
@@ -108,12 +107,9 @@ test('routes Welcome actions to login forms without selecting a role', async () 
   });
 
   await ReactTestRenderer.act(async () => {
-    renderer!.root.findByProps({ accessibilityLabel: 'School Login' }).props.onPress();
-    renderer!.root
-      .findByProps({ accessibilityLabel: 'Platform Admin Login' })
-      .props.onPress();
+    renderer!.root.findByProps({ accessibilityLabel: 'Login' }).props.onPress();
   });
 
-  expect(navigate).toHaveBeenCalledWith('SchoolLogin');
-  expect(navigate).toHaveBeenCalledWith('PlatformAdminLogin');
+  expect(navigate).toHaveBeenCalledTimes(1);
+  expect(navigate).toHaveBeenCalledWith('Login');
 });

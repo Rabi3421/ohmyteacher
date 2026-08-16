@@ -16,6 +16,8 @@ import {
 } from 'react-native-safe-area-context';
 
 import { useAppTheme } from '../../hooks/useAppTheme';
+import { TAB_BAR_HEIGHT } from './AppBottomTabBar';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export interface ScreenContainerProps {
   children: ReactNode;
@@ -36,7 +38,7 @@ export function ScreenContainer({
   children,
   scrollable = false,
   safeArea = true,
-  safeAreaEdges = ['top', 'bottom'],
+  safeAreaEdges = ['top'],
   keyboardAvoiding = true,
   padded = true,
   backgroundColor,
@@ -47,10 +49,13 @@ export function ScreenContainer({
   testID,
 }: ScreenContainerProps) {
   const theme = useAppTheme();
+  const insets = useSafeAreaInsets();
   const background = backgroundColor ?? theme.colors.background;
+  const tabBarBottomPad = TAB_BAR_HEIGHT + Math.max(insets.bottom, 8);
   const contentStyles: StyleProp<ViewStyle> = [
     styles.content,
     padded && { paddingHorizontal: theme.layout.screenPadding },
+    scrollable && { paddingBottom: tabBarBottomPad },
     contentContainerStyle,
   ];
   const content = scrollable ? (

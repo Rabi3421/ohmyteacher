@@ -103,6 +103,11 @@ import { SchoolBranchesScreen } from '../screens/organization/SchoolBranchesScre
 import { SchoolDetailsScreen } from '../screens/organization/SchoolDetailsScreen';
 import { SchoolSettingsScreen } from '../screens/organization/SchoolSettingsScreen';
 import { RoleLandingScreen } from '../screens/role/RoleLandingScreen';
+import { AcademicsHubScreen } from '../screens/hub/AcademicsHubScreen';
+import { FeesHubScreen } from '../screens/hub/FeesHubScreen';
+import { ExamsHubScreen } from '../screens/hub/ExamsHubScreen';
+import { MoreMenuScreen } from '../screens/hub/MoreMenuScreen';
+import { TabBarWrapper } from '../components/layout/TabBarWrapper';
 import { CreatePlatformSchoolScreen } from '../screens/platform/CreatePlatformSchoolScreen';
 import { EditPlatformSchoolScreen } from '../screens/platform/EditPlatformSchoolScreen';
 import { PlatformDashboardScreen } from '../screens/platform/PlatformDashboardScreen';
@@ -291,12 +296,57 @@ export function RoleNavigatorShell({ role }: RoleNavigatorShellProps) {
     'reports.export_history.view',
   );
 
+  if (isSuperAdmin) {
+    return (
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        <Stack.Screen
+          component={PlatformDashboardScreen}
+          initialParams={{ role }}
+          name={ROUTES.ROLE_LANDING}
+        />
+        <Stack.Screen component={PlatformSchoolsScreen} name={ROUTES.SCHOOLS} />
+        <Stack.Screen component={CreatePlatformSchoolScreen} name={ROUTES.CREATE_SCHOOL} />
+        <Stack.Screen component={PlatformSchoolDetailsScreen} name={ROUTES.SCHOOL_DETAILS} />
+        <Stack.Screen component={EditPlatformSchoolScreen} name={ROUTES.EDIT_SCHOOL} />
+        {canViewReports ? (
+          <>
+            <Stack.Screen component={ReportsDashboardScreen} name={ROUTES.REPORTS_DASHBOARD} />
+            <Stack.Screen component={ReportCatalogScreen} name={ROUTES.REPORT_CATALOG} />
+            <Stack.Screen component={ReportViewerScreen} name={ROUTES.REPORT_VIEWER} />
+            <Stack.Screen component={ReportFiltersScreen} name={ROUTES.REPORT_FILTERS} />
+          </>
+        ) : null}
+      </Stack.Navigator>
+    );
+  }
+
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <TabBarWrapper role={role}>
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen
-        component={isSuperAdmin ? PlatformDashboardScreen : RoleLandingScreen}
+        component={RoleLandingScreen}
         initialParams={{ role }}
         name={ROUTES.ROLE_LANDING}
+      />
+      <Stack.Screen
+        component={AcademicsHubScreen}
+        initialParams={{ role }}
+        name={ROUTES.ACADEMICS_HUB}
+      />
+      <Stack.Screen
+        component={FeesHubScreen}
+        initialParams={{ role }}
+        name={ROUTES.FEES_HUB}
+      />
+      <Stack.Screen
+        component={ExamsHubScreen}
+        initialParams={{ role }}
+        name={ROUTES.EXAMS_HUB}
+      />
+      <Stack.Screen
+        component={MoreMenuScreen}
+        initialParams={{ role }}
+        name={ROUTES.MORE_MENU}
       />
       {canViewReports ? (
         <>
@@ -1114,26 +1164,6 @@ export function RoleNavigatorShell({ role }: RoleNavigatorShellProps) {
           />
         </>
       ) : null}
-      {isSuperAdmin ? (
-        <>
-          <Stack.Screen
-            component={PlatformSchoolsScreen}
-            name={ROUTES.SCHOOLS}
-          />
-          <Stack.Screen
-            component={CreatePlatformSchoolScreen}
-            name={ROUTES.CREATE_SCHOOL}
-          />
-          <Stack.Screen
-            component={PlatformSchoolDetailsScreen}
-            name={ROUTES.SCHOOL_DETAILS}
-          />
-          <Stack.Screen
-            component={EditPlatformSchoolScreen}
-            name={ROUTES.EDIT_SCHOOL}
-          />
-        </>
-      ) : null}
       {canViewOrganization ? (
         <>
           <Stack.Screen
@@ -1263,6 +1293,7 @@ export function RoleNavigatorShell({ role }: RoleNavigatorShellProps) {
           />
         </>
       ) : null}
-    </Stack.Navigator>
+      </Stack.Navigator>
+    </TabBarWrapper>
   );
 }

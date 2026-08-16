@@ -1,7 +1,4 @@
-import type {
-  AuthSession,
-  UserMembership,
-} from '../../src/models/auth';
+import type { AuthSession, UserMembership } from '../../src/models/auth';
 import { ApiClientError } from '../../src/services/api/apiError';
 import type { AuthService } from '../../src/services/auth/authService';
 import type { AuthSessionStorage } from '../../src/services/auth/authSessionStorage';
@@ -51,7 +48,9 @@ function makeSession(
   };
 }
 
-function setup(session = makeSession([makeMembership('membership-1', 'SCHOOL_ADMIN')])) {
+function setup(
+  session = makeSession([makeMembership('membership-1', 'SCHOOL_ADMIN')]),
+) {
   const service = {
     getCurrentSchool: jest.fn().mockResolvedValue({
       data: session.school,
@@ -78,8 +77,7 @@ function setup(session = makeSession([makeMembership('membership-1', 'SCHOOL_ADM
       message: 'Sent again',
       success: true,
     }),
-    requestPlatformOtp: jest.fn(),
-    requestSchoolOtp: jest.fn().mockResolvedValue({
+    requestOtp: jest.fn().mockResolvedValue({
       data: {
         destinationMasked: '+91 ••••••3210',
         expiresInSeconds: 300,
@@ -123,9 +121,8 @@ function setup(session = makeSession([makeMembership('membership-1', 'SCHOOL_ADM
 async function requestAndVerify(
   setupResult: ReturnType<typeof setup>,
 ): Promise<void> {
-  await setupResult.store.getState().requestSchoolOtp({
+  await setupResult.store.getState().requestOtp({
     mobile: '9876543210',
-    schoolCode: 'OMT001',
   });
   await setupResult.store.getState().verifyOtp('123456');
 }
@@ -154,6 +151,27 @@ describe('auth store', () => {
     );
   });
 
+  it('routes a verified super admin through the same login flow', async () => {
+    const platformSession = makeSession([
+      {
+        id: 'platform-admin',
+        role: 'SUPER_ADMIN',
+        status: 'ACTIVE',
+        userId: 'user-1',
+      },
+    ]);
+    platformSession.school = undefined;
+    const platformAccount = setup(platformSession);
+    await platformAccount.store.getState().requestOtp({ mobile: '9999999999' });
+    expect(await platformAccount.store.getState().verifyOtp('123456')).toBe(
+      true,
+    );
+    expect(platformAccount.store.getState().status).toBe('authenticated');
+    expect(platformAccount.store.getState().activeMembership?.role).toBe(
+      'SUPER_ADMIN',
+    );
+  });
+
   it('requires workspace selection for multiple memberships', async () => {
     const result = setup(
       makeSession([
@@ -178,9 +196,7 @@ describe('auth store', () => {
       ]),
     );
     await requestAndVerify(result);
-    const selected = await result.store
-      .getState()
-      .selectMembership('inactive');
+    const selected = await result.store.getState().selectMembership('inactive');
     expect(selected).toBe(false);
     expect(result.store.getState().error?.code).toBe('INVALID_MEMBERSHIP');
   });
@@ -342,7 +358,7 @@ describe('auth store', () => {
             });
         }),
     );
-    await result.store.getState().requestSchoolOtp({ mobile: '9876543210' });
+    await result.store.getState().requestOtp({ mobile: '9876543210' });
     const first = result.store.getState().verifyOtp('123456');
     const second = result.store.getState().verifyOtp('123456');
     expect(await second).toBe(false);
@@ -353,7 +369,7 @@ describe('auth store', () => {
 
   it('resets resend timing only after a confirmed resend', async () => {
     const result = setup();
-    await result.store.getState().requestSchoolOtp({ mobile: '9876543210' });
+    await result.store.getState().requestOtp({ mobile: '9876543210' });
     const original = result.store.getState().pendingOtpRequest;
     result.service.resendOtp.mockRejectedValueOnce(
       new ApiClientError({ message: 'Please wait', status: 429 }),

@@ -3,7 +3,6 @@ import {
   Image,
   ImageSourcePropType,
   Pressable,
-  ScrollView,
   StatusBar,
   StyleSheet,
   Text,
@@ -26,8 +25,7 @@ const welcomeHero =
   require('../assets/images/welcome-hero.png') as ImageSourcePropType;
 
 type WelcomeScreenProps = {
-  onSchoolLoginPress?: () => void;
-  onPlatformAdminLoginPress?: () => void;
+  onLoginPress?: () => void;
   onComponentPreviewPress?: () => void;
   onLanguagePress?: () => void;
 };
@@ -51,23 +49,31 @@ function TrailingChevron({ variant }: { variant: 'blue' | 'white' }) {
 }
 
 export function WelcomeScreen({
-  onSchoolLoginPress = defaultAction,
-  onPlatformAdminLoginPress = defaultAction,
+  onLoginPress = defaultAction,
   onComponentPreviewPress,
   onLanguagePress = defaultAction,
 }: WelcomeScreenProps) {
-  const { width } = useWindowDimensions();
+  const { height, width } = useWindowDimensions();
   const isNarrow = width < 380;
+  const isCompact = height < 820;
+  const isVeryCompact = height < 700;
   const metrics = useMemo(() => {
     const horizontalPadding = isNarrow ? spacing.md : spacing.lg;
     const contentWidth = Math.min(width - horizontalPadding * 2, 460);
+    const maximumHeroHeight = isVeryCompact ? 235 : 300;
+    const minimumHeroHeight = isVeryCompact ? 225 : isCompact ? 300 : 230;
 
     return {
+      brandSize: isVeryCompact ? 50 : isCompact ? 58 : 66,
       contentWidth,
-      heroHeight: Math.max(275, Math.min(contentWidth * 0.82, 370)),
+      headerHeight: isVeryCompact ? 94 : isCompact ? 108 : 122,
+      heroHeight: Math.max(
+        minimumHeroHeight,
+        Math.min(contentWidth * 0.68, maximumHeroHeight),
+      ),
       horizontalPadding,
     };
-  }, [isNarrow, width]);
+  }, [isCompact, isNarrow, isVeryCompact, width]);
 
   return (
     <LinearGradient
@@ -90,16 +96,15 @@ export function WelcomeScreen({
       </View>
 
       <SafeAreaView edges={['top', 'bottom']} style={styles.safeArea}>
-        <ScrollView
-          alwaysBounceVertical={false}
-          contentContainerStyle={[
-            styles.scrollContent,
+        <View
+          style={[
+            styles.pageContent,
             { paddingHorizontal: metrics.horizontalPadding },
           ]}
-          showsVerticalScrollIndicator={false}
+          testID="welcome-screen-content"
         >
           <View style={[styles.content, { maxWidth: metrics.contentWidth }]}>
-            <View style={styles.header}>
+            <View style={[styles.header, { height: metrics.headerHeight }]}>
               <Pressable
                 accessibilityHint="Opens language options"
                 accessibilityLabel="Change language, currently English"
@@ -127,7 +132,7 @@ export function WelcomeScreen({
               </Pressable>
 
               <View style={styles.brandSection}>
-                <BrandMark size={isNarrow ? 76 : 84} />
+                <BrandMark size={metrics.brandSize} />
                 <Text
                   adjustsFontSizeToFit
                   minimumFontScale={0.86}
@@ -162,7 +167,9 @@ export function WelcomeScreen({
                 style={[
                   styles.badge,
                   isNarrow && styles.badgeNarrow,
+                  isCompact && styles.badgeCompact,
                   styles.studentsBadge,
+                  isCompact && styles.topBadgeCompact,
                 ]}
               />
               <FeatureBadge
@@ -174,7 +181,9 @@ export function WelcomeScreen({
                 style={[
                   styles.badge,
                   isNarrow && styles.badgeNarrow,
+                  isCompact && styles.badgeCompact,
                   styles.homeworkBadge,
+                  isCompact && styles.topBadgeCompact,
                 ]}
               />
               <FeatureBadge
@@ -186,7 +195,9 @@ export function WelcomeScreen({
                 style={[
                   styles.badge,
                   isNarrow && styles.badgeNarrow,
+                  isCompact && styles.badgeCompact,
                   styles.attendanceBadge,
+                  isCompact && styles.bottomBadgeCompact,
                 ]}
               />
               <FeatureBadge
@@ -198,7 +209,9 @@ export function WelcomeScreen({
                 style={[
                   styles.badge,
                   isNarrow && styles.badgeNarrow,
+                  isCompact && styles.badgeCompact,
                   styles.reportsBadge,
+                  isCompact && styles.bottomBadgeCompact,
                 ]}
               />
 
@@ -226,7 +239,12 @@ export function WelcomeScreen({
               </Svg>
             </View>
 
-            <View style={styles.messageSection}>
+            <View
+              style={[
+                styles.messageSection,
+                isCompact && styles.messageSectionCompact,
+              ]}
+            >
               <Text
                 adjustsFontSizeToFit
                 minimumFontScale={0.88}
@@ -267,11 +285,13 @@ export function WelcomeScreen({
             </View>
 
             <Pressable
-              accessibilityLabel="School Login"
+              accessibilityHint="Sign in securely using your mobile number"
+              accessibilityLabel="Login"
               accessibilityRole="button"
-              onPress={onSchoolLoginPress}
+              onPress={onLoginPress}
               style={({ pressed }) => [
                 styles.primaryButtonShadow,
+                isCompact && styles.primaryButtonShadowCompact,
                 pressed && styles.pressedButton,
               ]}
             >
@@ -279,7 +299,10 @@ export function WelcomeScreen({
                 colors={[colors.lightBlue, colors.primary]}
                 end={{ x: 1, y: 0.5 }}
                 start={{ x: 0, y: 0.5 }}
-                style={styles.primaryButton}
+                style={[
+                  styles.primaryButton,
+                  isCompact && styles.primaryButtonCompact,
+                ]}
               >
                 <View style={styles.loginIconCircle}>
                   <AppIcon
@@ -295,39 +318,10 @@ export function WelcomeScreen({
                   numberOfLines={1}
                   style={styles.primaryButtonText}
                 >
-                  School Login
+                  Login
                 </Text>
               </LinearGradient>
               <TrailingChevron variant="white" />
-            </Pressable>
-
-            <Pressable
-              accessibilityHint="Opens the platform administrator login"
-              accessibilityLabel="Platform Admin Login"
-              accessibilityRole="button"
-              onPress={onPlatformAdminLoginPress}
-              style={({ pressed }) => [
-                styles.secondaryButton,
-                pressed && styles.pressedCard,
-              ]}
-            >
-              <View style={styles.schoolIconCircle}>
-                <AppIcon
-                  color={colors.primary}
-                  name="school"
-                  size={26}
-                  strokeWidth={2}
-                />
-              </View>
-              <View style={styles.secondaryCopy}>
-                <Text style={styles.secondaryTitle}>
-                  Platform Admin Login
-                </Text>
-                <Text style={styles.secondarySubtitle}>
-                  For authorized platform operators
-                </Text>
-              </View>
-              <TrailingChevron variant="blue" />
             </Pressable>
 
             {__DEV__ && onComponentPreviewPress ? (
@@ -340,13 +334,15 @@ export function WelcomeScreen({
                   pressed && styles.pressedCard,
                 ]}
               >
-                <Text style={styles.debugLinkText}>Open design system preview</Text>
+                <Text style={styles.debugLinkText}>
+                  Open design system preview
+                </Text>
               </Pressable>
             ) : null}
 
             <View
               accessibilityLabel="Secure, Reliable, Fast, and Easy to Use"
-              style={styles.trustCard}
+              style={[styles.trustCard, isCompact && styles.trustCardCompact]}
             >
               <TrustFeature icon="shield-check" label="Secure" />
               <TrustFeature icon="lock" label="Reliable" />
@@ -358,7 +354,7 @@ export function WelcomeScreen({
               />
             </View>
 
-            <View style={styles.footer}>
+            <View style={[styles.footer, isCompact && styles.footerCompact]}>
               <AppIcon
                 color={colors.iconBlue}
                 name="settings"
@@ -376,7 +372,7 @@ export function WelcomeScreen({
               <Text style={styles.footerText}>for Better Education</Text>
             </View>
           </View>
-        </ScrollView>
+        </View>
       </SafeAreaView>
     </LinearGradient>
   );
@@ -423,16 +419,17 @@ const styles = StyleSheet.create({
     top: 430,
     width: 340,
   },
-  scrollContent: {
+  pageContent: {
     alignItems: 'center',
-    paddingBottom: spacing.sm,
+    flex: 1,
+    paddingBottom: spacing.xs,
   },
   content: {
     alignSelf: 'center',
+    flex: 1,
     width: '100%',
   },
   header: {
-    minHeight: 165,
     position: 'relative',
   },
   languageButton: {
@@ -459,31 +456,31 @@ const styles = StyleSheet.create({
   },
   brandSection: {
     alignItems: 'center',
-    marginTop: spacing.md,
+    marginTop: spacing.xs,
   },
   brandTitle: {
     color: colors.navy,
-    fontSize: typography.sizes.brand,
+    fontSize: 34,
     fontWeight: typography.weights.extraBold,
     letterSpacing: -1,
     marginTop: 2,
     textAlign: 'center',
   },
   brandTitleNarrow: {
-    fontSize: 34,
+    fontSize: 31,
   },
   brandSubtitle: {
     color: colors.mutedText,
     fontSize: 15,
     fontWeight: typography.weights.semibold,
-    lineHeight: 23,
-    marginTop: spacing.xs,
+    lineHeight: 20,
+    marginTop: 2,
     textAlign: 'center',
   },
   hero: {
     alignSelf: 'stretch',
     marginHorizontal: -spacing.md,
-    marginTop: spacing.sm,
+    marginTop: 2,
     overflow: 'hidden',
     position: 'relative',
   },
@@ -502,6 +499,10 @@ const styles = StyleSheet.create({
     height: 88,
     width: 92,
   },
+  badgeCompact: {
+    height: 84,
+    width: 92,
+  },
   studentsBadge: {
     left: 6,
     top: 28,
@@ -518,6 +519,12 @@ const styles = StyleSheet.create({
     bottom: 65,
     right: -8,
   },
+  topBadgeCompact: {
+    top: 18,
+  },
+  bottomBadgeCompact: {
+    bottom: 42,
+  },
   wave: {
     bottom: 0,
     left: 0,
@@ -525,14 +532,17 @@ const styles = StyleSheet.create({
   },
   messageSection: {
     alignItems: 'center',
-    marginTop: spacing.lg,
+    marginTop: spacing.sm,
+  },
+  messageSectionCompact: {
+    marginTop: spacing.xs,
   },
   messageTitle: {
     color: colors.navy,
     fontSize: typography.sizes.headingSmall,
     fontWeight: typography.weights.extraBold,
     letterSpacing: -0.7,
-    lineHeight: 35,
+    lineHeight: 31,
     textAlign: 'center',
   },
   accentedHeading: {
@@ -553,24 +563,30 @@ const styles = StyleSheet.create({
     color: colors.mutedText,
     fontSize: typography.sizes.body,
     fontWeight: typography.weights.medium,
-    lineHeight: typography.lineHeights.body,
-    marginTop: spacing.md,
+    lineHeight: 21,
+    marginTop: spacing.xs,
     textAlign: 'center',
   },
   primaryButtonShadow: {
     ...softShadow,
     borderRadius: 20,
-    marginTop: spacing.xl,
+    marginTop: spacing.md,
     position: 'relative',
     shadowColor: colors.primary,
     shadowOpacity: 0.24,
+  },
+  primaryButtonShadowCompact: {
+    marginTop: spacing.sm,
   },
   primaryButton: {
     alignItems: 'center',
     borderRadius: 20,
     flexDirection: 'row',
-    height: 62,
+    height: 56,
     paddingHorizontal: spacing.md,
+  },
+  primaryButtonCompact: {
+    height: 52,
   },
   loginIconCircle: {
     alignItems: 'center',
@@ -586,42 +602,6 @@ const styles = StyleSheet.create({
     fontSize: typography.sizes.button,
     fontWeight: typography.weights.bold,
     marginHorizontal: spacing.md,
-  },
-  secondaryButton: {
-    ...softShadow,
-    alignItems: 'center',
-    backgroundColor: colors.surfaceGlass96,
-    borderColor: colors.border,
-    borderRadius: 20,
-    borderWidth: 1,
-    flexDirection: 'row',
-    marginTop: spacing.md,
-    minHeight: 70,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-  },
-  schoolIconCircle: {
-    alignItems: 'center',
-    backgroundColor: colors.paleBlue,
-    borderRadius: 22,
-    height: 44,
-    justifyContent: 'center',
-    width: 44,
-  },
-  secondaryCopy: {
-    flex: 1,
-    marginHorizontal: spacing.md,
-  },
-  secondaryTitle: {
-    color: colors.navy,
-    fontSize: typography.sizes.subtitle,
-    fontWeight: typography.weights.bold,
-  },
-  secondarySubtitle: {
-    color: colors.mutedText,
-    fontSize: typography.sizes.bodySmall,
-    fontWeight: typography.weights.medium,
-    marginTop: 3,
   },
   trailingChevron: {
     height: 24,
@@ -660,16 +640,21 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     borderWidth: 1,
     flexDirection: 'row',
-    marginTop: spacing.xl,
-    minHeight: 96,
+    marginTop: spacing.md,
+    minHeight: 84,
     paddingHorizontal: spacing.xs,
-    paddingTop: spacing.md,
+    paddingTop: spacing.sm,
+  },
+  trustCardCompact: {
+    marginTop: spacing.sm,
+    minHeight: 78,
+    paddingTop: spacing.xs,
   },
   debugLink: {
     alignSelf: 'center',
-    minHeight: 44,
+    minHeight: 34,
     justifyContent: 'center',
-    marginTop: spacing.sm,
+    marginTop: 2,
     paddingHorizontal: spacing.md,
   },
   debugLinkText: {
@@ -684,8 +669,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'center',
-    marginTop: spacing.lg,
+    marginTop: spacing.sm,
     paddingHorizontal: spacing.xs,
+  },
+  footerCompact: {
+    marginTop: spacing.xs,
   },
   footerText: {
     color: colors.mutedText,

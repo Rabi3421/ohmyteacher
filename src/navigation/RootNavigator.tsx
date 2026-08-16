@@ -17,6 +17,7 @@ import { UnsupportedRoleScreen } from '../screens/auth/UnsupportedRoleScreen';
 import { WorkspaceSelectionScreen } from '../screens/auth/WorkspaceSelectionScreen';
 import { useAuthStore } from '../store';
 import { AccountantNavigator } from './AccountantNavigator';
+import { getAuthInitialRoute } from './authNavigatorResolver';
 import { AuthNavigator } from './AuthNavigator';
 import { BranchAdminNavigator } from './BranchAdminNavigator';
 import { navigationRef } from './navigationRef';
@@ -57,7 +58,9 @@ export function RootNavigator() {
     >
       {status === 'initializing' ? <SplashScreen /> : null}
       {status === 'unauthenticated' || status === 'otpRequired' ? (
-        <AuthNavigator />
+        <AuthNavigator
+          initialRouteName={getAuthInitialRoute(status)}
+        />
       ) : null}
       {status === 'membershipRequired' ? (
         <WorkspaceSelectionScreen />

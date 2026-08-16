@@ -2,7 +2,6 @@ import type { AppRole } from '../constants/permissions';
 import type { ID } from './common';
 
 export type AccountStatus = 'ACTIVE' | 'INACTIVE';
-export type AuthFlowKind = 'school' | 'platform';
 
 export interface AuthUser {
   id: ID;
@@ -50,18 +49,11 @@ export interface AuthSession {
   unsupportedRole?: string;
 }
 
-export interface SchoolOtpInput {
-  schoolCode?: string;
+export interface LoginOtpInput {
   mobile: string;
 }
 
-export interface PlatformOtpInput {
-  identifier: string;
-}
-
-export type OtpRequestContext =
-  | { kind: 'school'; input: SchoolOtpInput }
-  | { kind: 'platform'; input: PlatformOtpInput };
+export type OtpRequestContext = { kind: 'login'; input: LoginOtpInput };
 
 export interface PendingOtpRequest extends OtpRequest {
   context: OtpRequestContext;

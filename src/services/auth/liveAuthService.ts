@@ -186,9 +186,7 @@ export class LiveAuthRepository {
     }
   }
 
-  async refreshSession(
-    refreshToken: string,
-  ): Promise<ApiResponse<AuthTokens>> {
+  async refreshSession(refreshToken: string): Promise<ApiResponse<AuthTokens>> {
     const raw = await this.client.post<unknown>(
       '/auth/refresh/',
       { refresh: refreshToken },
@@ -269,9 +267,7 @@ export function createLiveAuthService({
         : success(null, 'Local session cleared.');
     },
     refreshSession: refreshToken => repository.refreshSession(refreshToken),
-    requestPlatformOtp: input =>
-      repository.sendOtp(input.identifier, 'identifier'),
-    requestSchoolOtp: input => repository.sendOtp(input.mobile),
+    requestOtp: input => repository.sendOtp(input.mobile),
     resendOtp: phoneNumber => repository.resendOtp(phoneNumber),
     restoreSession,
     updateCurrentSchool: input => repository.updateCurrentSchool(input),

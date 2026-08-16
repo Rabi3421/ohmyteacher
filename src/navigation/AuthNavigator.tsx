@@ -3,21 +3,19 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 import { ROUTES } from '../constants/routes';
 import { WelcomeScreen } from '../screens/WelcomeScreen';
-import { PlatformAdminLoginScreen } from '../screens/auth/PlatformAdminLoginScreen';
-import { SchoolLoginScreen } from '../screens/auth/SchoolLoginScreen';
+import { LoginScreen } from '../screens/auth/LoginScreen';
 import { OtpVerificationScreen } from '../screens/auth/OtpVerificationScreen';
 import { ComponentPreviewScreen } from '../screens/foundation/ComponentPreviewScreen';
 import { PlaceholderScreen } from '../screens/foundation/PlaceholderScreen';
-import type {
-  AuthScreenProps,
-  AuthStackParamList,
-} from './navigationTypes';
+import type { AuthScreenProps, AuthStackParamList } from './navigationTypes';
 
 const Stack = createNativeStackNavigator<AuthStackParamList>();
 
-export function WelcomeRoute({
-  navigation,
-}: AuthScreenProps<'Welcome'>) {
+interface AuthNavigatorProps {
+  initialRouteName?: keyof AuthStackParamList;
+}
+
+export function WelcomeRoute({ navigation }: AuthScreenProps<'Welcome'>) {
   return (
     <WelcomeScreen
       onComponentPreviewPress={
@@ -25,29 +23,24 @@ export function WelcomeRoute({
           ? () => navigation.navigate(ROUTES.COMPONENT_PREVIEW)
           : undefined
       }
-      onPlatformAdminLoginPress={() =>
-        navigation.navigate(ROUTES.PLATFORM_ADMIN_LOGIN)
-      }
-      onSchoolLoginPress={() => navigation.navigate(ROUTES.SCHOOL_LOGIN)}
+      onLoginPress={() => navigation.navigate(ROUTES.LOGIN)}
     />
   );
 }
 
-export function AuthNavigator() {
+export function AuthNavigator({
+  initialRouteName = ROUTES.WELCOME,
+}: AuthNavigatorProps) {
   return (
     <Stack.Navigator
-      initialRouteName={ROUTES.WELCOME}
+      initialRouteName={initialRouteName}
       screenOptions={{
         animation: 'slide_from_right',
         headerShown: false,
       }}
     >
       <Stack.Screen component={WelcomeRoute} name={ROUTES.WELCOME} />
-      <Stack.Screen component={SchoolLoginScreen} name={ROUTES.SCHOOL_LOGIN} />
-      <Stack.Screen
-        component={PlatformAdminLoginScreen}
-        name={ROUTES.PLATFORM_ADMIN_LOGIN}
-      />
+      <Stack.Screen component={LoginScreen} name={ROUTES.LOGIN} />
       <Stack.Screen
         component={OtpVerificationScreen}
         name={ROUTES.OTP_VERIFICATION}

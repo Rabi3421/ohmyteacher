@@ -1,7 +1,6 @@
 export const ROUTES = {
   WELCOME: 'Welcome',
-  SCHOOL_LOGIN: 'SchoolLogin',
-  PLATFORM_ADMIN_LOGIN: 'PlatformAdminLogin',
+  LOGIN: 'Login',
   OTP_VERIFICATION: 'OtpVerification',
   WORKSPACE_SELECTION: 'WorkspaceSelection',
   ROLE_LANDING: 'RoleLanding',
@@ -242,6 +241,12 @@ export const ROUTES = {
   ACTIVE_SESSIONS: 'ActiveSessions',
   COMPONENT_PREVIEW: 'ComponentPreview',
   PLACEHOLDER: 'Placeholder',
+  // Hub / tab-root screens (new)
+  ACADEMICS_HUB: 'AcademicsHub',
+  FEES_HUB: 'FeesHub',
+  EXAMS_HUB: 'ExamsHub',
+  MORE_MENU: 'MoreMenu',
+  PROFILE: 'Profile',
 } as const;
 
 export type RouteName = (typeof ROUTES)[keyof typeof ROUTES];

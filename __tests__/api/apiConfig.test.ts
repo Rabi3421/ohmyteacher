@@ -1,24 +1,40 @@
 import {
   API_PREFIX,
+  DEPLOYED_API_ORIGIN,
   createApiConfiguration,
   normalizeBaseUrl,
 } from '../../src/config/apiConfig';
 
 describe('API configuration', () => {
-  it('selects the Android emulator URL', () => {
+  it('defaults to the deployed backend', () => {
+    const configuration = createApiConfiguration({
+      environment: 'development',
+      platform: 'android',
+    });
+    expect(configuration.target).toBe('remote');
+    expect(configuration.baseUrl).toBe(`${DEPLOYED_API_ORIGIN}${API_PREFIX}`);
+    expect(
+      createApiConfiguration({ environment: 'production', platform: 'ios' })
+        .baseUrl,
+    ).toBe(`${DEPLOYED_API_ORIGIN}${API_PREFIX}`);
+  });
+
+  it('selects the Android emulator URL for the local target', () => {
     expect(
       createApiConfiguration({
         environment: 'development',
         platform: 'android',
+        target: 'local',
       }).baseUrl,
     ).toBe(`http://10.0.2.2:8000${API_PREFIX}`);
   });
 
-  it('selects the iOS simulator URL', () => {
+  it('selects the iOS simulator URL for the local target', () => {
     expect(
       createApiConfiguration({
         environment: 'development',
         platform: 'ios',
+        target: 'local',
       }).baseUrl,
     ).toBe(`http://127.0.0.1:8000${API_PREFIX}`);
   });

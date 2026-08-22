@@ -28,13 +28,17 @@ Frontend target matrix:
 
 | Target | Base URL |
 |---|---|
-| Android emulator | `http://10.0.2.2:8000/ohmyteacher/api/v0` |
-| iOS simulator | `http://127.0.0.1:8000/ohmyteacher/api/v0` |
+| Auto (default, non-test) | resolves to `remote` |
+| Remote (deployed) | `https://ohmyteacher.ebatuaa.com/ohmyteacher/api/v0`, overridable |
+| Local (`android`) | `http://10.0.2.2:8000/ohmyteacher/api/v0` |
+| Local (`ios`) | `http://127.0.0.1:8000/ohmyteacher/api/v0` |
 | Test | configurable, defaulting to the loopback v0 URL |
 | Physical device | required runtime-injected LAN base URL |
-| Remote/tunnel | required runtime-injected HTTPS/HTTP base URL |
 
-The backend currently allows only `localhost` and `127.0.0.1` hosts. A physical device using a LAN address or a tunnel host will be rejected until backend deployment configuration adds the host. CORS lists only local browser origins; native React Native requests are not browser CORS requests, but a web client would require additional origins. The merged Android release manifest also sets `usesCleartextTraffic=false`: release builds must use an HTTPS remote/tunnel URL, or a deliberately separate local-only Android build type must opt into HTTP. Do not weaken the production release manifest globally just for LAN development.
+Override the default by injecting `globalThis.__OHMYTEACHER_API_CONFIG__` (for
+example `{ target: 'local' }`) before `src/config/env.ts` is first imported.
+
+The deployed backend must list `ohmyteacher.ebatuaa.com` in `ALLOWED_HOSTS`. A physical device using a LAN address or a tunnel host will be rejected until backend deployment configuration adds the host. CORS lists only local browser origins; native React Native requests are not browser CORS requests, but a web client would require additional origins. The merged Android release manifest also sets `usesCleartextTraffic=false`: release builds must use an HTTPS remote/tunnel URL, or a deliberately separate local-only Android build type must opt into HTTP. Do not weaken the production release manifest globally just for LAN development.
 
 ## 3. Authentication and token lifecycle
 

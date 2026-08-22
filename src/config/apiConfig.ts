@@ -3,9 +3,13 @@ import type { EnvironmentName } from './env';
 export const API_PREFIX = '/ohmyteacher/api/v0';
 export const DEFAULT_API_TIMEOUT_MS = 15_000;
 
+/** Origin of the deployed OhMyTeacher backend. */
+export const DEPLOYED_API_ORIGIN = 'https://ohmyteacher.ebatuaa.com';
+
 export type ApiPlatform = 'android' | 'ios';
 export type ApiTarget =
   | 'auto'
+  | 'local'
   | 'android-emulator'
   | 'ios-simulator'
   | 'physical-device'
@@ -29,7 +33,7 @@ export interface CreateApiConfigurationInput extends ApiRuntimeConfig {
 export interface ApiConfiguration {
   baseUrl: string;
   timeoutMs: number;
-  target: Exclude<ApiTarget, 'auto'>;
+  target: Exclude<ApiTarget, 'auto' | 'local'>;
   enableLogging: boolean;
 }
 
@@ -59,21 +63,28 @@ export function createApiConfiguration({
   platform,
   target = 'auto',
   physicalDeviceBaseUrl,
-  remoteBaseUrl,
+  remoteBaseUrl = urlWithPrefix(DEPLOYED_API_ORIGIN),
   testBaseUrl = urlWithPrefix('http://127.0.0.1:8000'),
   timeoutMs = DEFAULT_API_TIMEOUT_MS,
   enableLogging,
 }: CreateApiConfigurationInput): ApiConfiguration {
-  const selectedTarget: Exclude<ApiTarget, 'auto'> =
+  // `auto` points at the deployed backend. Local development against a
+  // machine-hosted server uses the platform-aware `local` target.
+  const platformLocalTarget: Exclude<ApiTarget, 'auto' | 'local'> =
+    platform === 'android' ? 'android-emulator' : 'ios-simulator';
+  const selectedTarget: Exclude<ApiTarget, 'auto' | 'local'> =
     target === 'auto'
       ? environment === 'test'
         ? 'test'
-        : platform === 'android'
-          ? 'android-emulator'
-          : 'ios-simulator'
-      : target;
+        : 'remote'
+      : target === 'local'
+        ? platformLocalTarget
+        : target;
 
-  const urls: Record<Exclude<ApiTarget, 'auto'>, string | undefined> = {
+  const urls: Record<
+    Exclude<ApiTarget, 'auto' | 'local'>,
+    string | undefined
+  > = {
     'android-emulator': urlWithPrefix('http://10.0.2.2:8000'),
     'ios-simulator': urlWithPrefix('http://127.0.0.1:8000'),
     'physical-device': physicalDeviceBaseUrl,

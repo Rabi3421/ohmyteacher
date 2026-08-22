@@ -1,10 +1,18 @@
-# Add project specific ProGuard rules here.
-# By default, the flags in this file are appended to flags specified
-# in /usr/local/Cellar/android-sdk/24.3.3/tools/proguard/proguard-android.txt
-# You can edit the include path and order by changing the proguardFiles
-# directive in build.gradle.
+# Project-specific ProGuard/R8 rules.
 #
-# For more details, see
-#   http://developer.android.com/guide/developing/tools/proguard.html
+# React Native and its native modules ship consumer rules inside their AARs,
+# which R8 applies automatically. The rules below cover the remaining gaps for
+# this app: code reached only through JNI or reflection, which R8 cannot see.
 
-# Add any project specific keep options here:
+# Hermes and the JNI bridge.
+-keep class com.facebook.jni.** { *; }
+-keep class com.facebook.hermes.unicode.** { *; }
+
+# react-native-keychain reaches the Android keystore providers reflectively.
+-keep class com.oblador.keychain.** { *; }
+
+# Networking stack used by fetch(); these warnings are for optional deps that
+# are never on the runtime classpath.
+-dontwarn okhttp3.**
+-dontwarn okio.**
+-dontwarn javax.annotation.**

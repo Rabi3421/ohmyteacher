@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { StyleSheet, View } from 'react-native';
 
+import { AppDetailRow } from '../../components/common/AppDetailRow';
 import { AppBadge } from '../../components/common/AppBadge';
 import { AppButton } from '../../components/common/AppButton';
 import { AppCard } from '../../components/common/AppCard';
@@ -110,21 +111,22 @@ export function RoleDetailsScreen({
           }
           style={styles.action}
           title={editable ? 'Configure Permissions' : 'View Permissions'}
-          variant={editable ? 'primary' : 'outline'}
         />
       </View>
     </AppScreen>
   );
 }
 
-function Detail({ label, value }: { label: string; value: string }) {
-  const theme = useAppTheme();
-  return (
-    <View style={styles.detail}>
-      <AppText color={theme.colors.textSecondary}>{label}</AppText>
-      <AppText variant="bodyMedium">{value}</AppText>
-    </View>
-  );
+function Detail({
+  label,
+  value,
+  divided,
+}: {
+  label: string;
+  value: string;
+  divided?: boolean;
+}) {
+  return <AppDetailRow divided={divided} label={label} value={value} />;
 }
 
 const styles = StyleSheet.create({

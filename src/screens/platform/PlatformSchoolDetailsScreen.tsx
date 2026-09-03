@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
+import { AppDetailRow } from '../../components/common/AppDetailRow';
 import { AppBadge } from '../../components/common/AppBadge';
 import { AppButton } from '../../components/common/AppButton';
 import { AppCard } from '../../components/common/AppCard';
@@ -126,10 +127,10 @@ export function PlatformSchoolDetailsScreen({
             variant="outlined"
           >
             <Detail label="Email" value={school.email || '—'} />
-            <Detail label="Phone" value={maskedPhone(school.phone)} />
-            <Detail label="Address" value={school.address || '—'} />
-            <Detail label="UPI ID" value={school.upiId || '—'} />
-            <Detail label="Created" value={formatDisplayDate(school.createdAt)} />
+            <Detail divided label="Phone" value={maskedPhone(school.phone)} />
+            <Detail divided label="Address" value={school.address || '—'} />
+            <Detail divided label="UPI ID" value={school.upiId || '—'} />
+            <Detail divided label="Created" value={formatDisplayDate(school.createdAt)} />
           </AppCard>
           {createdAdmin ? (
             <AppCard
@@ -138,8 +139,8 @@ export function PlatformSchoolDetailsScreen({
               variant="outlined"
             >
               <Detail label="Name" value={createdAdmin.name} />
-              <Detail label="Role" value="School Admin" />
-              <Detail label="Status" value={createdAdmin.status} />
+              <Detail divided label="Role" value="School Admin" />
+              <Detail divided label="Status" value={createdAdmin.status} />
             </AppCard>
           ) : null}
           <View style={styles.actions}>
@@ -189,16 +190,16 @@ export function PlatformSchoolDetailsScreen({
   );
 }
 
-function Detail({ label, value }: { label: string; value: string }) {
-  const theme = useAppTheme();
-  return (
-    <View style={styles.detail}>
-      <AppText color={theme.colors.textSecondary}>{label}</AppText>
-      <AppText align="right" style={styles.detailValue} variant="bodyMedium">
-        {value}
-      </AppText>
-    </View>
-  );
+function Detail({
+  label,
+  value,
+  divided,
+}: {
+  label: string;
+  value: string;
+  divided?: boolean;
+}) {
+  return <AppDetailRow divided={divided} label={label} value={value} />;
 }
 
 const styles = StyleSheet.create({

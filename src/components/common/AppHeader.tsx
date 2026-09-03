@@ -1,8 +1,10 @@
 import React, { type ReactNode } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StatusBar, StyleSheet, View } from 'react-native';
+import LinearGradient from 'react-native-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAppTheme } from '../../hooks/useAppTheme';
+import { brandGradient } from '../../theme/gradients';
 import { AppIcon } from '../icons/AppIcon';
 import { AppText } from './AppText';
 
@@ -31,13 +33,17 @@ export function AppHeader({
     <View
       style={[
         styles.container,
-        {
-          backgroundColor: theme.colors.surface,
-          borderBottomColor: theme.colors.border,
-        },
+        { backgroundColor: theme.colors.surface },
         safeAreaStyle,
       ]}
     >
+      {/* Tab roots paint a light-on-gradient status bar; this header sits on a
+          light surface, so it has to claim the dark treatment back. */}
+      <StatusBar
+        backgroundColor={theme.colors.surface}
+        barStyle={theme.mode === 'dark' ? 'light-content' : 'dark-content'}
+      />
+
       <View style={styles.content}>
         {onBackPress ? (
           <Pressable
@@ -47,18 +53,20 @@ export function AppHeader({
             onPress={onBackPress}
             style={({ pressed }) => [
               styles.backButton,
+              { backgroundColor: theme.colors.primarySubtle },
               { opacity: pressed ? 0.55 : 1 },
             ]}
           >
             <AppIcon
-              color={theme.colors.textPrimary}
+              color={theme.colors.primary}
               name="chevron-left"
-              size={theme.iconSizes.md}
+              size={theme.iconSizes.sm}
+              strokeWidth={2.4}
             />
           </Pressable>
         ) : null}
         <View style={styles.copy}>
-          <AppText numberOfLines={1} variant="title">
+          <AppText numberOfLines={1} style={styles.title}>
             {title}
           </AppText>
           {subtitle ? (
@@ -75,13 +83,23 @@ export function AppHeader({
           <View style={styles.actions}>{rightActions}</View>
         ) : null}
       </View>
+
+      <LinearGradient
+        colors={[...brandGradient(theme.mode)]}
+        end={{ x: 1, y: 0 }}
+        start={{ x: 0, y: 0 }}
+        style={styles.accentStrip}
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  accentStrip: {
+    height: 3,
+  },
   container: {
-    borderBottomWidth: StyleSheet.hairlineWidth,
+    overflow: 'hidden',
   },
   content: {
     alignItems: 'center',
@@ -91,11 +109,11 @@ const styles = StyleSheet.create({
   },
   backButton: {
     alignItems: 'center',
-    height: 44,
+    borderRadius: 12,
+    height: 36,
     justifyContent: 'center',
-    marginLeft: -10,
-    marginRight: 4,
-    width: 44,
+    marginRight: 10,
+    width: 36,
   },
   copy: {
     flex: 1,
@@ -105,5 +123,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexDirection: 'row',
     marginLeft: 8,
+  },
+  title: {
+    fontSize: 18,
+    fontWeight: '700',
+    lineHeight: 24,
   },
 });

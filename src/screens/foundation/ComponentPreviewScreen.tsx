@@ -7,6 +7,7 @@ import {
   AppButton,
   type AppButtonVariant,
 } from '../../components/common/AppButton';
+import { AppChoiceChip } from '../../components/common/AppChoiceChip';
 import { AppCard } from '../../components/common/AppCard';
 import { AppDateField } from '../../components/common/AppDateField';
 import { AppDivider } from '../../components/common/AppDivider';
@@ -135,12 +136,12 @@ export function ComponentPreviewScreen({
           >
             <View style={styles.wrap}>
               {THEME_MODES.map(mode => (
-                <AppButton
+                <AppChoiceChip
                   key={mode}
                   onPress={() => setThemeMode(mode)}
                   style={styles.compactButton}
-                  title={mode[0].toUpperCase() + mode.slice(1)}
-                  variant={themeMode === mode ? 'primary' : 'outline'}
+                  label={mode[0].toUpperCase() + mode.slice(1)}
+                  selected={themeMode === mode}
                 />
               ))}
             </View>

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { AppButton } from '../../components/common/AppButton';
+import { AppChoiceChip } from '../../components/common/AppChoiceChip';
 import { AppCard } from '../../components/common/AppCard';
 import { AppHeader } from '../../components/common/AppHeader';
 import { AppScreen } from '../../components/common/AppScreen';
@@ -13,9 +14,9 @@ import { LoadingView } from '../../components/feedback/LoadingView';
 import { ROUTES } from '../../constants/routes';
 import { useFeeDueAccess } from '../../hooks/useFeeDueAccess';
 import type { RoleScreenProps } from '../../navigation/navigationTypes';
-import { getDownstreamMockAcademicSessions } from '../../services/academic/downstreamMockAcademicIdentity';
 import {
   useAuthStore,
+  useCurrentOrganizationStore,
   useFeeDueStore,
   useOrganizationStore,
 } from '../../store';
@@ -31,11 +32,22 @@ export function FeeOutstandingDashboardScreen({
   const loading = useFeeDueStore(state => state.isLoadingOutstanding);
   const error = useFeeDueStore(state => state.error);
   const load = useFeeDueStore(state => state.loadOutstanding);
-  const school = useOrganizationStore(state => state.currentSchool);
-  const branches = useOrganizationStore(state => state.branches.items);
-  const sessions = getDownstreamMockAcademicSessions(route.params.schoolId);
-  const loadSchool = useOrganizationStore(state => state.loadSchool);
-  const loadBranches = useOrganizationStore(state => state.loadBranches);
+  // Branches and the school record come from the live current-organization
+  // store; useOrganizationStore still serves mock data for everything except
+  // academic sessions.
+  const school = useCurrentOrganizationStore(state => state.currentSchool);
+  const branches = useCurrentOrganizationStore(state => state.allBranches);
+  // Live academic sessions — Fee Dues run against the real backend, so the
+  // context must come from the same source the rest of the app uses.
+  const sessions = useOrganizationStore(state => state.academicSessions);
+  const isLoadingSessions = useOrganizationStore(state => state.isLoadingSessions);
+  const loadSchool = useCurrentOrganizationStore(
+    state => state.loadCurrentSchool,
+  );
+  const loadBranches = useCurrentOrganizationStore(state => state.loadBranches);
+  const loadAcademicSessions = useOrganizationStore(
+    state => state.loadAcademicSessions,
+  );
   const [branchId, setBranchId] = useState(
     route.params.branchId ?? membership?.branchId,
   );
@@ -55,8 +67,14 @@ export function FeeOutstandingDashboardScreen({
     Promise.all([
       loadSchool(route.params.schoolId),
       loadBranches(route.params.schoolId),
+      loadAcademicSessions(route.params.schoolId),
     ]).catch(() => undefined);
-  }, [loadBranches, loadSchool, route.params.schoolId]);
+  }, [
+    loadAcademicSessions,
+    loadBranches,
+    loadSchool,
+    route.params.schoolId,
+  ]);
 
   useEffect(() => {
     if (!branchId) {
@@ -97,10 +115,15 @@ export function FeeOutstandingDashboardScreen({
     setContext,
   ]);
 
-  if (sessions.length === 0) {
+  if (sessions.length === 0 && !isLoadingSessions) {
     return (
       <AppScreen testID="fee-outstanding-dashboard-screen">
-        <ErrorState message="Fee Dues are still a demo module and have no mock academic identity matching this live school. No live academic IDs were sent to them." title="Demo context unavailable" />
+        <ErrorState
+          message="Create an academic session for this school before generating or tracking fee dues."
+          onRetry={() => loadAcademicSessions(route.params.schoolId)}
+          retryLabel="Reload sessions"
+          title="No academic session yet"
+        />
       </AppScreen>
     );
   }
@@ -148,22 +171,22 @@ export function FeeOutstandingDashboardScreen({
                 (!membership?.branchId || item.id === membership.branchId),
             )
             .map(item => (
-              <AppButton
+              <AppChoiceChip
                 key={item.id}
                 onPress={() => setBranchId(item.id)}
-                title={item.name}
-                variant={item.id === branch.id ? 'primary' : 'outline'}
+                label={item.name}
+                selected={item.id === branch.id}
               />
             ))}
         </View>
         <AppText variant="label">Academic Session</AppText>
         <View style={styles.options}>
           {sessions.map(item => (
-            <AppButton
+            <AppChoiceChip
               key={item.id}
               onPress={() => setSessionId(item.id)}
-              title={`${item.name}${item.status === 'CLOSED' ? ' · Closed' : ''}`}
-              variant={item.id === session.id ? 'primary' : 'outline'}
+              label={`${item.name}${item.status === 'CLOSED' ? ' · Closed' : ''}`}
+              selected={item.id === session.id}
             />
           ))}
         </View>

@@ -40,9 +40,11 @@ export function AppCard({
       backgroundColor: theme.colors.surface,
       borderColor:
         variant === 'outlined' ? theme.colors.borderStrong : theme.colors.border,
-      borderRadius: theme.radius.lg,
+      borderRadius: theme.radius.xl,
+      shadowColor: theme.colors.shadow,
     },
-    variant === 'elevated' ? theme.shadows.md : theme.shadows.none,
+    styles.soft,
+    variant === 'elevated' && theme.shadows.md,
     style,
   ];
   const content = (
@@ -94,8 +96,14 @@ export function AppCard({
 
 const styles = StyleSheet.create({
   card: {
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     overflow: 'hidden',
+  },
+  soft: {
+    elevation: 3,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.07,
+    shadowRadius: 12,
   },
   content: {
     padding: 16,

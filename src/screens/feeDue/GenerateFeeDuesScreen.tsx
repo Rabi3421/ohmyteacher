@@ -3,6 +3,7 @@ import { StyleSheet, View } from 'react-native';
 
 import { AppBadge } from '../../components/common/AppBadge';
 import { AppButton } from '../../components/common/AppButton';
+import { AppChoiceChip } from '../../components/common/AppChoiceChip';
 import { AppHeader } from '../../components/common/AppHeader';
 import { AppInput } from '../../components/common/AppInput';
 import { AppScreen } from '../../components/common/AppScreen';
@@ -47,17 +48,20 @@ export function GenerateFeeDuesScreen({ navigation, route }: RoleScreenProps<'Ge
       <View style={styles.options}>{['Context & Period', 'Student Scope', 'Fee Scope', 'Preview', 'Confirm'].map((label, index) => <AppBadge key={label} label={`${index + 1}. ${label}`} status={index + 1 <= draft.step ? 'active' : 'draft'} />)}</View>
       {draft.step === 1 ? <View style={styles.fields}>
         <AppText variant="title">Generation Mode</AppText>
-        <View style={styles.options}>{(['BRANCH', 'CLASS', 'SECTION', 'SELECTED_STUDENTS', 'INDIVIDUAL_STUDENT', 'ONE_TIME_FEE', 'FULL_SESSION'] as FeeGenerationType[]).map(type => <AppButton key={type} onPress={() => setInput({ ...input, generationType: type })} title={type.replaceAll('_', ' ')} variant={input.generationType === type ? 'primary' : 'outline'} />)}</View>
+        <View style={styles.options}>{(['BRANCH', 'CLASS', 'SECTION', 'SELECTED_STUDENTS', 'INDIVIDUAL_STUDENT', 'ONE_TIME_FEE', 'FULL_SESSION'] as FeeGenerationType[]).map(type => <AppChoiceChip key={type} onPress={() => setInput({ ...input, generationType: type })} label={type.replaceAll('_', ' ')}
+            selected={input.generationType === type} />)}</View>
         <AppInput helperText="Examples: 2026-07, 2026-27-Q1. Blank only for full session." label="Period Keys" onChangeText={text => setInput({ ...input, requestedPeriodKeys: csv(text) })} value={input.requestedPeriodKeys.join(',')} />
         <AppInput helperText="YYYY-MM-DD" label="As-of Date" onChangeText={asOfDate => setInput({ ...input, asOfDate })} value={input.asOfDate} />
-        <AppButton onPress={() => setInput({ ...input, includePreviousEligiblePeriods: !input.includePreviousEligiblePeriods })} title="Include Previous Eligible Periods" variant={input.includePreviousEligiblePeriods ? 'primary' : 'outline'} />
+        <AppChoiceChip onPress={() => setInput({ ...input, includePreviousEligiblePeriods: !input.includePreviousEligiblePeriods })} label="Include Previous Eligible Periods"
+          selected={input.includePreviousEligiblePeriods} />
       </View> : draft.step === 2 ? <View style={styles.fields}>
         <AppInput label="Class IDs" onChangeText={text => setInput({ ...input, classIds: csv(text) })} value={input.classIds.join(',')} />
         <AppInput label="Section IDs" onChangeText={text => setInput({ ...input, sectionIds: csv(text) })} value={input.sectionIds.join(',')} />
         <AppInput label="Student IDs" onChangeText={text => setInput({ ...input, studentIds: csv(text) })} value={input.studentIds.join(',')} />
       </View> : draft.step === 3 ? <View style={styles.fields}>
         <AppText variant="title">Fee Scope</AppText>
-        <View style={styles.options}>{(['ALL', 'RECURRING', 'ONE_TIME', 'SELECTED'] as const).map(scope => <AppButton key={scope} onPress={() => setInput({ ...input, feeScope: scope })} title={scope.replace('_', ' ')} variant={input.feeScope === scope ? 'primary' : 'outline'} />)}</View>
+        <View style={styles.options}>{(['ALL', 'RECURRING', 'ONE_TIME', 'SELECTED'] as const).map(scope => <AppChoiceChip key={scope} onPress={() => setInput({ ...input, feeScope: scope })} label={scope.replace('_', ' ')}
+            selected={input.feeScope === scope} />)}</View>
         {input.feeScope === 'SELECTED' ? <AppInput label="Fee Head IDs" onChangeText={text => setInput({ ...input, feeHeadIds: csv(text) })} value={input.feeHeadIds.join(',')} /> : null}
       </View> : <View style={styles.fields}>
         <AppText variant="heading3">Ready for Mutation-Free Preview</AppText>

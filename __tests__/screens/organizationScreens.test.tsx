@@ -369,7 +369,9 @@ test('school details renders overview and organization summary', async () => {
   expect(
     renderer!.root.findByProps({ testID: 'school-details-screen' }),
   ).toBeTruthy();
-  expect(renderText(renderer!)).toContain('Live branch summary');
+  // The branch summary is now a pair of stat cards rather than a titled list.
+  expect(renderText(renderer!)).toContain('Total branches');
+  expect(renderText(renderer!)).toContain('SCHOOL INFORMATION');
   expect(renderText(renderer!)).toContain('Current authenticated school');
   await ReactTestRenderer.act(async () => renderer!.unmount());
 });

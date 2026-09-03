@@ -3,6 +3,7 @@ import { StyleSheet, View } from 'react-native';
 
 import { AppBadge } from '../../components/common/AppBadge';
 import { AppButton } from '../../components/common/AppButton';
+import { AppChoiceChip } from '../../components/common/AppChoiceChip';
 import { AppCard } from '../../components/common/AppCard';
 import { AppHeader } from '../../components/common/AppHeader';
 import { AppInput } from '../../components/common/AppInput';
@@ -100,8 +101,10 @@ export function FeeStructureDetailsScreen({ navigation, route }: RoleScreenProps
                       <View style={styles.editor}>
                         <AppInput error={amountError ?? error?.fieldErrors?.amount} keyboardType="decimal-pad" label="Amount (INR)" onChangeText={amount => { setEditing({ ...value, amount }); setAmountError(undefined); }} value={value.amount} />
                         <View style={styles.actions}>
-                          <AppButton onPress={() => setEditing({ ...value, mandatory: true })} title="Mandatory" variant={value.mandatory ? 'primary' : 'outline'} />
-                          <AppButton onPress={() => setEditing({ ...value, mandatory: false })} title="Optional" variant={!value.mandatory ? 'primary' : 'outline'} />
+                          <AppChoiceChip onPress={() => setEditing({ ...value, mandatory: true })} label="Mandatory"
+                            selected={value.mandatory} />
+                          <AppChoiceChip onPress={() => setEditing({ ...value, mandatory: false })} label="Optional"
+                            selected={!value.mandatory} />
                         </View>
                         <View style={styles.actions}>
                           <AppButton onPress={() => { setEditing(null); setAmountError(undefined); }} title="Cancel" variant="ghost" />

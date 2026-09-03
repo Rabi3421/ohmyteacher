@@ -39,6 +39,7 @@ export function AppInput({
 }: AppInputProps) {
   const theme = useAppTheme();
   const [passwordVisible, setPasswordVisible] = useState(false);
+  const [focused, setFocused] = useState(false);
   const isEditable = editable !== false && !disabled;
   const hasPasswordToggle = Boolean(secureTextEntry);
   const trailingIcon = hasPasswordToggle ? (
@@ -78,11 +79,17 @@ export function AppInput({
             backgroundColor: disabled
               ? theme.colors.surfaceMuted
               : theme.colors.surface,
-            borderColor: error ? theme.colors.error : theme.colors.border,
+            borderColor: error
+              ? theme.colors.error
+              : focused
+                ? theme.colors.primary
+                : theme.colors.border,
             minHeight: multiline
               ? theme.layout.inputHeight * 2
               : theme.layout.inputHeight,
           },
+          focused && !error && styles.focused,
+          error && styles.errored,
         ]}
       >
         {leftIcon ? <View style={styles.leadingIcon}>{leftIcon}</View> : null}
@@ -91,6 +98,14 @@ export function AppInput({
           editable={isEditable}
           maxFontSizeMultiplier={1.4}
           multiline={multiline}
+          onBlur={event => {
+            setFocused(false);
+            props.onBlur?.(event);
+          }}
+          onFocus={event => {
+            setFocused(true);
+            props.onFocus?.(event);
+          }}
           placeholderTextColor={theme.colors.textTertiary}
           secureTextEntry={secureTextEntry && !passwordVisible}
           selectionColor={theme.colors.primary}
@@ -130,14 +145,21 @@ export function AppInput({
 
 const styles = StyleSheet.create({
   label: {
-    marginBottom: 6,
+    fontWeight: '600',
+    marginBottom: 7,
   },
   inputFrame: {
     alignItems: 'center',
-    borderRadius: 12,
-    borderWidth: 1,
+    borderRadius: 14,
+    borderWidth: StyleSheet.hairlineWidth,
     flexDirection: 'row',
     overflow: 'hidden',
+  },
+  focused: {
+    borderWidth: 1.5,
+  },
+  errored: {
+    borderWidth: 1.5,
   },
   input: {
     flex: 1,

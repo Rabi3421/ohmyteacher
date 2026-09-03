@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, RefreshControl, ScrollView, StatusBar, StyleSheet, View } from 'react-native';
+import LinearGradient from 'react-native-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AppButton } from '../../components/common/AppButton';
+import { AppChoiceChip } from '../../components/common/AppChoiceChip';
 import { AppSearchInput } from '../../components/common/AppSearchInput';
 import { AppText } from '../../components/common/AppText';
 import { AppIcon } from '../../components/icons/AppIcon';
@@ -10,7 +12,6 @@ import { EmptyState } from '../../components/feedback/EmptyState';
 import { ErrorState } from '../../components/feedback/ErrorState';
 import { LoadingView } from '../../components/feedback/LoadingView';
 import { CurrentStudentCard } from '../../components/student/CurrentStudentComponents';
-import { TAB_BAR_HEIGHT } from '../../components/layout/AppBottomTabBar';
 import { ROUTES } from '../../constants/routes';
 import { useDebounce } from '../../hooks/useDebounce';
 import { useAppTheme } from '../../hooks/useAppTheme';
@@ -18,6 +19,7 @@ import { useTabFocus } from '../../hooks/useTabFocus';
 import { BACKEND_STUDENT_STATUSES, type BackendStudentStatus } from '../../models/currentStudent';
 import type { RoleScreenProps } from '../../navigation/navigationTypes';
 import { useCurrentStudentStore } from '../../store';
+import { brandGradient } from '../../theme/gradients';
 
 const STATUS_LABELS: Record<BackendStudentStatus | 'ALL', string> = {
   ALL: 'All',
@@ -51,15 +53,23 @@ export function StudentsScreen({ navigation, route }: RoleScreenProps<'Students'
   return (
     <View style={[styles.root, { backgroundColor: theme.colors.background }]}>
       {/* Header */}
-      <View style={[styles.header, { backgroundColor: theme.colors.surface, borderBottomColor: theme.colors.border, paddingTop: insets.top + 8 }]}>
+      <StatusBar
+        backgroundColor={theme.colors.surface}
+        barStyle={theme.mode === 'dark' ? 'light-content' : 'dark-content'}
+      />
+
+      <View style={[styles.header, { backgroundColor: theme.colors.surface, paddingTop: insets.top + 8 }]}>
         <View style={styles.headerRow}>
           <Pressable
             accessibilityLabel="Go back"
             hitSlop={8}
             onPress={() => navigation.goBack()}
-            style={({ pressed }) => [styles.backBtn, { opacity: pressed ? 0.5 : 1 }]}
+            style={({ pressed }) => [
+              styles.backBtn,
+              { backgroundColor: theme.colors.primarySubtle, opacity: pressed ? 0.5 : 1 },
+            ]}
           >
-            <AppIcon color={theme.colors.textPrimary} name="chevron-left" size={24} />
+            <AppIcon color={theme.colors.primary} name="chevron-left" size={18} strokeWidth={2.4} />
           </Pressable>
           <View style={styles.headerTitle}>
             <AppText style={{ color: theme.colors.textPrimary }} variant="title">Students</AppText>
@@ -78,7 +88,7 @@ export function StudentsScreen({ navigation, route }: RoleScreenProps<'Students'
         <View style={styles.searchWrap}>
           <AppSearchInput
             onChangeText={setSearch}
-            placeholder="Search by name, admission no., or parent phone"
+            placeholder="Search students"
             value={search}
           />
         </View>
@@ -89,35 +99,29 @@ export function StudentsScreen({ navigation, route }: RoleScreenProps<'Students'
           horizontal
           showsHorizontalScrollIndicator={false}
         >
-          {allStatuses.map(s => {
-            const isActive = s === 'ALL' ? !status : status === s;
-            return (
-              <Pressable
-                key={s}
-                onPress={() => setStatus(s === 'ALL' ? undefined : s as BackendStudentStatus)}
-                style={[
-                  styles.chip,
-                  {
-                    backgroundColor: isActive ? theme.colors.primary : theme.colors.surface,
-                    borderColor: isActive ? theme.colors.primary : theme.colors.border,
-                  },
-                ]}
-              >
-                <AppText
-                  style={{ color: isActive ? '#fff' : theme.colors.textSecondary }}
-                  variant="caption"
-                >
-                  {STATUS_LABELS[s]}
-                </AppText>
-              </Pressable>
-            );
-          })}
+          {allStatuses.map(s => (
+            <AppChoiceChip
+              key={s}
+              label={STATUS_LABELS[s]}
+              onPress={() =>
+                setStatus(s === 'ALL' ? undefined : (s as BackendStudentStatus))
+              }
+              selected={s === 'ALL' ? !status : status === s}
+            />
+          ))}
         </ScrollView>
+
+        <LinearGradient
+          colors={[...brandGradient(theme.mode)]}
+          end={{ x: 1, y: 0 }}
+          start={{ x: 0, y: 0 }}
+          style={styles.headerAccent}
+        />
       </View>
 
       {/* Content */}
       <ScrollView
-        contentContainerStyle={[styles.list, { paddingBottom: TAB_BAR_HEIGHT + insets.bottom + 16 }]}
+        contentContainerStyle={[styles.list, styles.listBottomPad]}
         refreshControl={
           <RefreshControl colors={['#1478F2']} onRefresh={load} refreshing={isLoading} tintColor="#1478F2" />
         }
@@ -151,16 +155,10 @@ export function StudentsScreen({ navigation, route }: RoleScreenProps<'Students'
 const styles = StyleSheet.create({
   backBtn: {
     alignItems: 'center',
-    height: 40,
+    borderRadius: 12,
+    height: 36,
     justifyContent: 'center',
-    marginLeft: -4,
-    width: 40,
-  },
-  chip: {
-    borderRadius: 20,
-    borderWidth: 1,
-    paddingHorizontal: 14,
-    paddingVertical: 6,
+    width: 36,
   },
   filterRow: {
     gap: 8,
@@ -169,7 +167,10 @@ const styles = StyleSheet.create({
     paddingTop: 4,
   },
   header: {
-    borderBottomWidth: StyleSheet.hairlineWidth,
+    overflow: 'hidden',
+  },
+  headerAccent: {
+    height: 3,
   },
   headerRow: {
     alignItems: 'center',
@@ -184,6 +185,9 @@ const styles = StyleSheet.create({
   list: {
     gap: 10,
     padding: 16,
+  },
+  listBottomPad: {
+    paddingBottom: 28,
   },
   root: {
     flex: 1,

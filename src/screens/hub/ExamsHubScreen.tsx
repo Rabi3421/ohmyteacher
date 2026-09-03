@@ -1,21 +1,20 @@
 import React from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { ScrollView, StatusBar, StyleSheet, View } from 'react-native';
 
-import { AppText } from '../../components/common/AppText';
 import { AppModuleCard } from '../../components/common/AppModuleCard';
-import { TAB_BAR_HEIGHT } from '../../components/layout/AppBottomTabBar';
+import { AppSectionLabel } from '../../components/common/AppSectionLabel';
+import { AppHubHeader } from '../../components/layout/AppHubHeader';
 import { ROUTES } from '../../constants/routes';
 import { useAppTheme } from '../../hooks/useAppTheme';
 import { useTabFocus } from '../../hooks/useTabFocus';
 import type { RoleScreenProps } from '../../navigation/navigationTypes';
 import { useAuthStore } from '../../store';
+import { brandGradientTop } from '../../theme/gradients';
 
 export function ExamsHubScreen({ navigation, route }: RoleScreenProps<'ExamsHub'>) {
   const theme = useAppTheme();
   const { role } = route.params;
   const membership = useAuthStore(s => s.activeMembership);
-  const insets = useSafeAreaInsets();
 
   useTabFocus('exams');
 
@@ -29,18 +28,27 @@ export function ExamsHubScreen({ navigation, route }: RoleScreenProps<'ExamsHub'
   const examsCtx = { branchId: branchId ?? '', academicSessionId: '', schoolId, sessionStatus: 'ACTIVE' as const };
 
   return (
-    <View style={[styles.root, { backgroundColor: theme.colors.background }]}>
-      <View style={[styles.header, { backgroundColor: theme.colors.surface, borderBottomColor: theme.colors.border, paddingTop: insets.top + 8 }]}>
-        <AppText style={{ color: theme.colors.textPrimary }} variant="heading3">
-          {isParent || isStudent ? 'Results' : 'Examinations'}
-        </AppText>
-        <AppText style={{ color: theme.colors.textSecondary, marginTop: 2 }} variant="caption">
-          {isParent || isStudent ? 'View your exam results and report cards' : 'Exam setup, marks entry, and results'}
-        </AppText>
-      </View>
+    <View
+      style={[styles.root, { backgroundColor: theme.colors.background }]}
+      testID="exams-hub-screen"
+    >
+      <StatusBar
+        backgroundColor={brandGradientTop(theme.mode)}
+        barStyle="light-content"
+      />
+
+      <AppHubHeader
+        icon={isParent || isStudent ? 'graduation-cap' : 'calendar-check'}
+        subtitle={
+          isParent || isStudent
+            ? 'View your exam results and report cards'
+            : 'Exam setup, marks entry, and results'
+        }
+        title={isParent || isStudent ? 'Results' : 'Examinations'}
+      />
 
       <ScrollView
-        contentContainerStyle={[styles.list, { paddingBottom: TAB_BAR_HEIGHT + insets.bottom + 16 }]}
+        contentContainerStyle={styles.list}
         showsVerticalScrollIndicator={false}
       >
         {isParent && schoolId ? (
@@ -59,9 +67,14 @@ export function ExamsHubScreen({ navigation, route }: RoleScreenProps<'ExamsHub'
 
         {canSetupExams && schoolId ? (
           <>
+            <AppSectionLabel title="Setup" />
             <AppModuleCard accent="#1478F2" description="Create and manage exams, terms, and grading" icon="calendar-check" onPress={() => navigation.navigate(ROUTES.EXAMINATION_SETUP, examsCtx)} tint="#EAF3FF" title="Examination Setup" />
+
+            <AppSectionLabel accent="#18A978" title="Assessment" />
             <AppModuleCard accent="#18A978" description="Enter and manage student marks" icon="presentation" onPress={() => navigation.navigate(ROUTES.MARKS_DASHBOARD, { ...examsCtx, examId: '' })} tint="#E8F8F2" title="Marks Entry" />
             <AppModuleCard accent="#18A978" description="Compute ranks, grades, and view results" icon="bar-chart" onPress={() => navigation.navigate(ROUTES.RESULT_PROCESSING_DASHBOARD, { ...examsCtx, examId: '' })} tint="#E8F8F2" title="Results Processing" />
+
+            <AppSectionLabel accent="#6366F1" title="Reporting" />
             <AppModuleCard accent="#6366F1" description="Generate and share student report cards" icon="file-text" onPress={() => navigation.navigate(ROUTES.REPORT_CARD_DASHBOARD, { ...examsCtx, examId: '' })} tint="#EEF2FF" title="Report Cards" />
           </>
         ) : null}
@@ -71,7 +84,13 @@ export function ExamsHubScreen({ navigation, route }: RoleScreenProps<'ExamsHub'
 }
 
 const styles = StyleSheet.create({
-  header: { borderBottomWidth: StyleSheet.hairlineWidth, paddingBottom: 16, paddingHorizontal: 20 },
-  list: { gap: 10, padding: 16 },
-  root: { flex: 1 },
+  list: {
+    gap: 12,
+    paddingBottom: 28,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+  },
+  root: {
+    flex: 1,
+  },
 });

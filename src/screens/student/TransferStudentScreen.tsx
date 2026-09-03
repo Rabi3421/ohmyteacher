@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { AppButton } from '../../components/common/AppButton';
+import { AppChoiceChip } from '../../components/common/AppChoiceChip';
 import { AppCard } from '../../components/common/AppCard';
 import { AppHeader } from '../../components/common/AppHeader';
 import { AppInput } from '../../components/common/AppInput';
@@ -106,11 +107,11 @@ export function TransferStudentScreen({
                       'BRANCH_TRANSFER',
                     ] as TransferType[]
                   ).map(type => (
-                    <AppButton
+                    <AppChoiceChip
                       key={type}
                       onPress={() => setValue({ ...value, type })}
-                      title={type.replace('_', ' ')}
-                      variant={value.type === type ? 'primary' : 'outline'}
+                      label={type.replace('_', ' ')}
+                      selected={value.type === type}
                     />
                   ))}
                 </View>

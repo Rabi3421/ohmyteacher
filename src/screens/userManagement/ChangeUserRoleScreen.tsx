@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { AppButton } from '../../components/common/AppButton';
+import { AppChoiceChip } from '../../components/common/AppChoiceChip';
 import { AppCard } from '../../components/common/AppCard';
 import { AppHeader } from '../../components/common/AppHeader';
 import { AppScreen } from '../../components/common/AppScreen';
@@ -80,13 +81,13 @@ export function ChangeUserRoleScreen({
             </AppText>
             <View style={styles.options}>
               {roles.map(role => (
-                <AppButton
+                <AppChoiceChip
                   disabled={role === staff.membership.role}
                   fullWidth
                   key={role}
                   onPress={() => setSelectedRole(role)}
-                  title={getRoleLabel(role)}
-                  variant={selectedRole === role ? 'primary' : 'outline'}
+                  label={getRoleLabel(role)}
+                  selected={selectedRole === role}
                 />
               ))}
             </View>

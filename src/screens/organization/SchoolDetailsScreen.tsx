@@ -4,10 +4,15 @@ import { StyleSheet, View } from 'react-native';
 import { AppBadge } from '../../components/common/AppBadge';
 import { AppButton } from '../../components/common/AppButton';
 import { AppCard } from '../../components/common/AppCard';
+import { AppDetailRow } from '../../components/common/AppDetailRow';
 import { AppHeader } from '../../components/common/AppHeader';
+import { AppIdentityCard } from '../../components/common/AppIdentityCard';
 import { AppScreen } from '../../components/common/AppScreen';
+import { AppSectionLabel } from '../../components/common/AppSectionLabel';
+import { AppStatCard } from '../../components/common/AppStatCard';
 import { AppText } from '../../components/common/AppText';
 import { ErrorState } from '../../components/feedback/ErrorState';
+import { AppIcon } from '../../components/icons/AppIcon';
 import { InlineError } from '../../components/feedback/InlineError';
 import { LoadingView } from '../../components/feedback/LoadingView';
 import { ROUTES } from '../../constants/routes';
@@ -116,14 +121,13 @@ export function SchoolDetailsScreen({
           onBackPress={navigation.goBack}
           title="My School"
         />
-        <View style={styles.titleRow}>
-          <View style={styles.copy}>
-            <AppText variant="heading2">{school.name || 'Unnamed school'}</AppText>
-            <AppText color={theme.colors.textSecondary} variant="caption">
-              Current authenticated school
-            </AppText>
-          </View>
-          <AppBadge status={inactive ? 'inactive' : 'active'} />
+        <View style={styles.identity}>
+          <AppIdentityCard
+            icon="school"
+            subtitle="Current authenticated school"
+            title={school.name || 'Unnamed school'}
+            trailing={<AppBadge status={inactive ? 'inactive' : 'active'} />}
+          />
         </View>
         {inactive ? (
           <InlineError
@@ -136,36 +140,105 @@ export function SchoolDetailsScreen({
             <AppText color={theme.colors.success}>{successMessage}</AppText>
           </AppCard>
         ) : null}
-        <AppCard style={styles.card} variant="outlined">
-          <Detail label="Address" value={school.address || '—'} />
-          <Detail label="Phone" value={maskPhone(school.phone)} />
-          <Detail label="Email" value={school.email || '—'} />
-          <Detail label="UPI ID" value={school.upiId || '—'} />
-          <Detail label="Created" value={formatDisplayDate(school.createdAt)} />
-        </AppCard>
-        <AppCard style={styles.card} variant="outlined">
-          <AppText variant="title">Live branch summary</AppText>
-          {branchError && branches.length === 0 ? (
-            <InlineError message={branchError.message} style={styles.notice} />
-          ) : (
-            <>
-              <Detail label="Branches" value={String(branches.length)} />
-              <Detail
-                label="Active branches"
-                value={String(
-                  branches.filter(branch => branch.status === 'ACTIVE').length,
-                )}
+        <View style={styles.section}>
+          <AppSectionLabel title="Branches" accent="#6366F1" />
+        </View>
+        {branchError && branches.length === 0 ? (
+          <InlineError message={branchError.message} />
+        ) : (
+          <View style={styles.statsRow}>
+            <View style={styles.statSlot}>
+              <AppStatCard
+                compact
+                icon="globe"
+                iconBg="#EEF2FF"
+                iconColor="#6366F1"
+                label="Total branches"
+                value={branches.length}
               />
-            </>
-          )}
+            </View>
+            <View style={styles.statSlot}>
+              <AppStatCard
+                compact
+                icon="check-circle"
+                iconBg={theme.colors.successSubtle}
+                iconColor={theme.colors.success}
+                label="Active"
+                value={
+                  branches.filter(branch => branch.status === 'ACTIVE').length
+                }
+              />
+            </View>
+          </View>
+        )}
+
+        <View style={styles.section}>
+          <AppSectionLabel title="School information" />
+        </View>
+        <AppCard contentStyle={styles.detailCard}>
+          <AppDetailRow
+            icon="map-pin"
+            label="Address"
+            value={school.address || '—'}
+          />
+          <AppDetailRow
+            divided
+            icon="phone"
+            iconColor="#18A978"
+            iconTint="#E8F8F2"
+            label="Phone"
+            value={maskPhone(school.phone)}
+          />
+          <AppDetailRow
+            divided
+            icon="mail"
+            iconColor="#6366F1"
+            iconTint="#EEF2FF"
+            label="Email"
+            value={school.email || '—'}
+          />
+          <AppDetailRow
+            divided
+            icon="wallet"
+            iconColor="#F59A23"
+            iconTint="#FFF4E4"
+            label="UPI ID"
+            value={school.upiId || '—'}
+          />
+          <AppDetailRow
+            divided
+            icon="calendar"
+            iconColor="#7A5AF8"
+            iconTint="#F0ECFF"
+            label="Created"
+            value={formatDisplayDate(school.createdAt)}
+          />
         </AppCard>
-        <AppCard style={styles.card} variant="outlined">
-          <AppText variant="title">Phase 18 scope</AppText>
-          <AppText color={theme.colors.textSecondary} style={styles.scopeCopy}>
+
+        <View
+          style={[
+            styles.scopeNote,
+            {
+              backgroundColor: theme.colors.infoSubtle,
+              borderColor: theme.colors.border,
+            },
+          ]}
+        >
+          <AppIcon
+            color={theme.colors.info}
+            name="info"
+            size={17}
+            strokeWidth={2}
+          />
+          <AppText
+            color={theme.colors.textSecondary}
+            style={styles.scopeCopy}
+            variant="caption"
+          >
             Staff, academics, students, fees and other business modules remain
             mock and are not joined to these live organization records.
           </AppText>
-        </AppCard>
+        </View>
         <View style={styles.actions}>
           {isSchoolAdmin ? (
             <AppButton
@@ -175,7 +248,6 @@ export function SchoolDetailsScreen({
                 navigation.navigate(ROUTES.EDIT_SCHOOL, { schoolId })
               }
               title="Edit School Profile"
-              variant="outline"
             />
           ) : null}
           {isSchoolAdmin ? (
@@ -214,36 +286,24 @@ export function SchoolDetailsScreen({
   );
 }
 
-function Detail({ label, value }: { label: string; value: string }) {
-  const theme = useAppTheme();
-  return (
-    <View style={styles.detail}>
-      <AppText color={theme.colors.textSecondary}>{label}</AppText>
-      <AppText align="right" style={styles.detailValue} variant="bodyMedium">
-        {value}
-      </AppText>
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
-  actions: { gap: 10, marginTop: 24 },
-  card: { marginTop: 16 },
-  copy: { flex: 1, marginRight: 12 },
-  detail: {
-    alignItems: 'flex-start',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 12,
-  },
-  detailValue: { flex: 1, marginLeft: 20 },
+  actions: { gap: 12, marginTop: 26 },
+  detailCard: { paddingVertical: 4 },
+  identity: { marginTop: 20 },
   maxWidth: { alignSelf: 'center', maxWidth: 680, width: '100%' },
   notice: { marginTop: 16 },
-  scopeCopy: { marginTop: 8 },
-  screenContent: { paddingBottom: 32 },
-  titleRow: {
-    alignItems: 'center',
+  scopeCopy: { flex: 1 },
+  scopeNote: {
+    alignItems: 'flex-start',
+    borderRadius: 16,
+    borderWidth: StyleSheet.hairlineWidth,
     flexDirection: 'row',
-    marginTop: 22,
+    gap: 10,
+    marginTop: 18,
+    padding: 14,
   },
+  screenContent: { paddingBottom: 32 },
+  section: { marginTop: 22 },
+  statSlot: { flex: 1 },
+  statsRow: { flexDirection: 'row', gap: 12, marginTop: 12 },
 });

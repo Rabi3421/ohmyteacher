@@ -4,6 +4,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 import { AppBadge } from '../../components/common/AppBadge';
 import { AppButton } from '../../components/common/AppButton';
+import { AppChoiceChip } from '../../components/common/AppChoiceChip';
 import { AppCard } from '../../components/common/AppCard';
 import { AppHeader } from '../../components/common/AppHeader';
 import { AppInput } from '../../components/common/AppInput';
@@ -15,7 +16,6 @@ import { FeeStructureItemEditor } from '../../components/feeSetup/FeeFormFields'
 import { FeeContextBar } from '../../components/feeSetup/FeeComponents';
 import type { FeeStructureItemInput } from '../../models/fee';
 import type { RoleStackParamList } from '../../navigation/navigationTypes';
-import { getDownstreamMockAcademicSessions } from '../../services/academic/downstreamMockAcademicIdentity';
 import { useFeeSetupStore, useOrganizationStore } from '../../store';
 import { formatCurrency } from '../../utils/currency';
 import {
@@ -35,7 +35,7 @@ export function FeeStructureFormScreen({
   const heads = useFeeSetupStore(state => state.feeHeads.items);
   const fineRules = useFeeSetupStore(state => state.fineRules.items);
   const context = useFeeSetupStore(state => state.context);
-  const sessions = getDownstreamMockAcademicSessions(context?.schoolId ?? '');
+  const sessions = useOrganizationStore(state => state.academicSessions);
   const branches = useOrganizationStore(state => state.branches.items);
   const school = useOrganizationStore(state => state.currentSchool);
   const current = useFeeSetupStore(state => state.currentFeeStructure);
@@ -132,7 +132,8 @@ export function FeeStructureFormScreen({
           <AppInput error={errors.classId} label="Class ID" onChangeText={classId => setInput({ ...draft.input, classId })} value={draft.input.classId} />
           <AppInput error={errors.effectiveFrom} helperText="YYYY-MM-DD" label="Effective From" onChangeText={effectiveFrom => setInput({ ...draft.input, effectiveFrom })} value={draft.input.effectiveFrom} />
           <AppInput label="Description" multiline onChangeText={description => setInput({ ...draft.input, description })} value={draft.input.description ?? ''} />
-          <View style={styles.options}>{(['DRAFT','ACTIVE'] as const).map(status => <AppButton key={status} onPress={() => setInput({ ...draft.input, status })} title={status} variant={draft.input.status === status ? 'primary' : 'outline'} />)}</View>
+          <View style={styles.options}>{(['DRAFT','ACTIVE'] as const).map(status => <AppChoiceChip key={status} onPress={() => setInput({ ...draft.input, status })} label={status}
+            selected={draft.input.status === status} />)}</View>
         </View> : draft.step === 2 ? <View style={styles.fields}>
           <AppText variant="heading3">Add Active Fee Heads</AppText>
           <View style={styles.options}>{activeHeads.map(head => <AppButton disabled={draft.input.items.some(item => item.feeHeadId === head.id)} key={head.id} onPress={() => addHead(head.id)} title={head.name} variant="outline" />)}</View>

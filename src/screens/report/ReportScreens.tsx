@@ -1,12 +1,14 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
 import { AppButton } from '../../components/common/AppButton';
 import { AppCard } from '../../components/common/AppCard';
 import { AppHeader } from '../../components/common/AppHeader';
 import { AppInput } from '../../components/common/AppInput';
 import { AppScreen } from '../../components/common/AppScreen';
+import { AppSectionLabel } from '../../components/common/AppSectionLabel';
 import { AppText } from '../../components/common/AppText';
+import { AppIcon, type AppIconName } from '../../components/icons/AppIcon';
 import { EmptyState } from '../../components/feedback/EmptyState';
 import { ErrorState } from '../../components/feedback/ErrorState';
 import { LoadingView } from '../../components/feedback/LoadingView';
@@ -20,6 +22,7 @@ import {
   ReportWarningCard,
 } from '../../components/report/ReportComponents';
 import type { ReportExportFormat, ReportType } from '../../models/report';
+import { useAppTheme } from '../../hooks/useAppTheme';
 import type { RoleScreenProps } from '../../navigation/navigationTypes';
 import {
   useAuthStore,
@@ -115,6 +118,10 @@ function Shell({
 }) {
   const error = useReportStore(state => state.error);
   const success = useReportStore(state => state.successMessage);
+  const membership = useAuthStore(state => state.activeMembership);
+  const school = useAuthStore(state => state.school);
+  const schoolName =
+    membership?.schoolName ?? school?.name ?? `School ${params.schoolId}`;
   return (
     <AppScreen scrollable testID={testID}>
       <View style={styles.content}>
@@ -125,7 +132,7 @@ function Shell({
           subtitle="Reports and Analytics"
         />
         <ReportContextBar
-          school={params.schoolId}
+          school={schoolName}
           branches={params.branchIds?.length ?? 0}
           asOfDate={params.asOfDate ?? '2026-07-31'}
         />
@@ -274,17 +281,24 @@ export function ReportsDashboardScreen({
       ) : dashboard ? (
         <>
           <View style={styles.metrics}>
-            {dashboard.metrics.map(item => (
-              <ReportMetricCard key={item.key} metric={item} />
+            {dashboard.metrics.map((item, index) => (
+              <ReportMetricCard index={index} key={item.key} metric={item} />
             ))}
           </View>
-          <AppCard style={styles.card} variant="outlined">
-            <AppText variant="title">Report categories</AppText>
-            {dashboard.categoryCounts.map(item => (
-              <View key={item.category} style={styles.between}>
-                <AppText>{item.category}</AppText>
-                <AppText>{item.reportCount}</AppText>
-              </View>
+          <View style={styles.sectionLabel}>
+            <AppSectionLabel accent="#E84D8A" title="Report categories" />
+          </View>
+          <AppCard contentStyle={styles.listCard}>
+            {dashboard.categoryCounts.map((item, index) => (
+              <ReportCategoryRow
+                category={item.category}
+                divided={index > 0}
+                key={item.category}
+                onPress={() =>
+                  navigation.navigate('ReportCatalog', route.params)
+                }
+                reportCount={item.reportCount}
+              />
             ))}
           </AppCard>
           <ReportMetadataCard metadata={dashboard.metadata} />
@@ -871,6 +885,68 @@ export function ReportCardGenerationReportScreen(
   );
 }
 
+const CATEGORY_TONES: Record<string, { accent: string; tint: string; icon: AppIconName }> = {
+  COLLECTIONS: { accent: '#18A978', tint: '#E8F8F2', icon: 'wallet' },
+  COMMUNICATION: { accent: '#7A5AF8', tint: '#F0ECFF', icon: 'inbox' },
+  EXAMINATIONS: { accent: '#6366F1', tint: '#EEF2FF', icon: 'graduation-cap' },
+  FEES: { accent: '#F26B55', tint: '#FFF0ED', icon: 'credit-card' },
+  OVERVIEW: { accent: '#1478F2', tint: '#EAF3FF', icon: 'bar-chart' },
+  STUDENTS: { accent: '#F59A23', tint: '#FFF4E4', icon: 'users' },
+};
+
+function ReportCategoryRow({
+  category,
+  reportCount,
+  divided,
+  onPress,
+}: {
+  category: string;
+  reportCount: number;
+  divided: boolean;
+  onPress: () => void;
+}) {
+  const theme = useAppTheme();
+  const tone = CATEGORY_TONES[category] ?? {
+    accent: theme.colors.primary,
+    tint: theme.colors.primarySubtle,
+    icon: 'file-text' as AppIconName,
+  };
+
+  return (
+    <Pressable
+      accessibilityLabel={`${category}, ${reportCount} reports`}
+      accessibilityRole="button"
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.categoryRow,
+        divided && [
+          styles.categoryDivided,
+          { borderTopColor: theme.colors.border },
+        ],
+        pressed && styles.categoryPressed,
+      ]}
+    >
+      <View style={[styles.categoryIcon, { backgroundColor: tone.tint }]}>
+        <AppIcon color={tone.accent} name={tone.icon} size={17} strokeWidth={2} />
+      </View>
+      <AppText style={styles.categoryName} variant="bodyMedium">
+        {category.charAt(0) + category.slice(1).toLowerCase()}
+      </AppText>
+      <View style={[styles.countPill, { backgroundColor: tone.tint }]}>
+        <AppText color={tone.accent} style={styles.countText} variant="caption">
+          {reportCount}
+        </AppText>
+      </View>
+      <AppIcon
+        color={theme.colors.textTertiary}
+        name="chevron-right"
+        size={15}
+        strokeWidth={2.2}
+      />
+    </Pressable>
+  );
+}
+
 const styles = StyleSheet.create({
   actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   between: {
@@ -880,7 +956,32 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   card: { gap: 8 },
-  content: { gap: 12, paddingBottom: 32 },
-  metrics: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  categoryDivided: { borderTopWidth: StyleSheet.hairlineWidth },
+  categoryIcon: {
+    alignItems: 'center',
+    borderRadius: 10,
+    height: 34,
+    justifyContent: 'center',
+    width: 34,
+  },
+  categoryName: { flex: 1 },
+  categoryPressed: { opacity: 0.6 },
+  categoryRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 12,
+    paddingVertical: 12,
+  },
+  content: { gap: 14, paddingBottom: 32 },
+  countPill: {
+    borderRadius: 999,
+    minWidth: 28,
+    paddingHorizontal: 9,
+    paddingVertical: 3,
+  },
+  countText: { fontWeight: '700', textAlign: 'center' },
+  listCard: { paddingVertical: 4 },
+  metrics: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
+  sectionLabel: { marginTop: 8 },
   success: { color: '#15803D' },
 });

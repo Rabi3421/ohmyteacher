@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { AppButton } from '../../components/common/AppButton';
+import { AppChoiceChip } from '../../components/common/AppChoiceChip';
 import { AppHeader } from '../../components/common/AppHeader';
 import { AppInput } from '../../components/common/AppInput';
 import { AppScreen } from '../../components/common/AppScreen';
@@ -36,8 +37,10 @@ export function CreateFeeHeadScreen({ navigation, route }: RoleScreenProps<'Crea
             value={name}
           />
           <View style={styles.options}>
-            <AppButton onPress={() => setFrequency('MONTHLY')} title="Monthly" variant={frequency === 'MONTHLY' ? 'primary' : 'outline'} />
-            <AppButton onPress={() => setFrequency('ONE_TIME')} title="One-time" variant={frequency === 'ONE_TIME' ? 'primary' : 'outline'} />
+            <AppChoiceChip onPress={() => setFrequency('MONTHLY')} label="Monthly"
+              selected={frequency === 'MONTHLY'} />
+            <AppChoiceChip onPress={() => setFrequency('ONE_TIME')} label="One-time"
+              selected={frequency === 'ONE_TIME'} />
           </View>
           {error && !error.fieldErrors?.name ? <InlineError message={error.message} /> : null}
           <AppButton

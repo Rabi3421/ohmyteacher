@@ -1,21 +1,20 @@
 import React from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { ScrollView, StatusBar, StyleSheet, View } from 'react-native';
 
-import { AppText } from '../../components/common/AppText';
 import { AppModuleCard } from '../../components/common/AppModuleCard';
-import { TAB_BAR_HEIGHT } from '../../components/layout/AppBottomTabBar';
+import { AppSectionLabel } from '../../components/common/AppSectionLabel';
+import { AppHubHeader } from '../../components/layout/AppHubHeader';
 import { ROUTES } from '../../constants/routes';
 import { useAppTheme } from '../../hooks/useAppTheme';
 import { useTabFocus } from '../../hooks/useTabFocus';
 import type { RoleScreenProps } from '../../navigation/navigationTypes';
 import { useAuthStore } from '../../store';
+import { brandGradientTop } from '../../theme/gradients';
 
 export function AcademicsHubScreen({ navigation, route }: RoleScreenProps<'AcademicsHub'>) {
   const theme = useAppTheme();
   const { role } = route.params;
   const membership = useAuthStore(s => s.activeMembership);
-  const insets = useSafeAreaInsets();
 
   useTabFocus('academics');
 
@@ -29,18 +28,29 @@ export function AcademicsHubScreen({ navigation, route }: RoleScreenProps<'Acade
   const isStudent = role === 'STUDENT';
 
   return (
-    <View style={[styles.root, { backgroundColor: theme.colors.background }]}>
-      <View style={[styles.header, { backgroundColor: theme.colors.surface, borderBottomColor: theme.colors.border, paddingTop: insets.top + 8 }]}>
-        <AppText style={{ color: theme.colors.textPrimary }} variant="heading3">
-          {isParent ? 'My Children' : isStudent ? 'My Academics' : 'Academics'}
-        </AppText>
-        <AppText style={{ color: theme.colors.textSecondary, marginTop: 2 }} variant="caption">
-          {isParent ? 'View and manage your children' : isStudent ? 'Your academic information' : 'Manage students, classes, and subjects'}
-        </AppText>
-      </View>
+    <View
+      style={[styles.root, { backgroundColor: theme.colors.background }]}
+      testID="academics-hub-screen"
+    >
+      <StatusBar
+        backgroundColor={brandGradientTop(theme.mode)}
+        barStyle="light-content"
+      />
+
+      <AppHubHeader
+        icon={isParent ? 'users' : 'book-open'}
+        subtitle={
+          isParent
+            ? 'View and manage your children'
+            : isStudent
+              ? 'Your academic information'
+              : 'Manage students, classes, and subjects'
+        }
+        title={isParent ? 'My Children' : isStudent ? 'My Academics' : 'Academics'}
+      />
 
       <ScrollView
-        contentContainerStyle={[styles.list, { paddingBottom: TAB_BAR_HEIGHT + insets.bottom + 16 }]}
+        contentContainerStyle={styles.list}
         showsVerticalScrollIndicator={false}
       >
         {isParent && schoolId ? (
@@ -66,18 +76,22 @@ export function AcademicsHubScreen({ navigation, route }: RoleScreenProps<'Acade
         ) : null}
 
         {canManageStudents && schoolId ? (
-          <AppModuleCard
-            accent="#18A978"
-            description="Admit new students and manage existing records"
-            icon="users"
-            onPress={() => navigation.navigate(ROUTES.STUDENTS, { branchId, schoolId })}
-            tint="#E8F8F2"
-            title="Students"
-          />
+          <>
+            <AppSectionLabel accent="#18A978" title="Students" />
+            <AppModuleCard
+              accent="#18A978"
+              description="Admit new students and manage existing records"
+              icon="users"
+              onPress={() => navigation.navigate(ROUTES.STUDENTS, { branchId, schoolId })}
+              tint="#E8F8F2"
+              title="Students"
+            />
+          </>
         ) : null}
 
         {canViewOrg && schoolId ? (
           <>
+            <AppSectionLabel title="Structure" />
             <AppModuleCard
               accent="#1478F2"
               description="Classes, sections, and subject assignments"
@@ -106,14 +120,17 @@ export function AcademicsHubScreen({ navigation, route }: RoleScreenProps<'Acade
         ) : null}
 
         {isStaff && schoolId ? (
-          <AppModuleCard
-            accent="#F59A23"
-            description="Manage staff accounts and permissions"
-            icon="users"
-            onPress={() => navigation.navigate(ROUTES.STAFF_USERS, { schoolId })}
-            tint="#FFF4E4"
-            title="Staff"
-          />
+          <>
+            <AppSectionLabel accent="#F59A23" title="People" />
+            <AppModuleCard
+              accent="#F59A23"
+              description="Manage staff accounts and permissions"
+              icon="users"
+              onPress={() => navigation.navigate(ROUTES.STAFF_USERS, { schoolId })}
+              tint="#FFF4E4"
+              title="Staff"
+            />
+          </>
         ) : null}
       </ScrollView>
     </View>
@@ -121,14 +138,11 @@ export function AcademicsHubScreen({ navigation, route }: RoleScreenProps<'Acade
 }
 
 const styles = StyleSheet.create({
-  header: {
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    paddingBottom: 16,
-    paddingHorizontal: 20,
-  },
   list: {
-    gap: 10,
-    padding: 16,
+    gap: 12,
+    paddingBottom: 28,
+    paddingHorizontal: 20,
+    paddingTop: 20,
   },
   root: {
     flex: 1,

@@ -3,6 +3,7 @@ import { StyleSheet, View } from 'react-native';
 
 import { AppBadge } from '../../components/common/AppBadge';
 import { AppButton } from '../../components/common/AppButton';
+import { AppChoiceChip } from '../../components/common/AppChoiceChip';
 import { AppCard } from '../../components/common/AppCard';
 import { AppHeader } from '../../components/common/AppHeader';
 import { AppScreen } from '../../components/common/AppScreen';
@@ -240,12 +241,12 @@ export function RolePermissionsScreen({
                             }
                           />
                           {configurable ? (
-                            <AppButton
+                            <AppChoiceChip
                               onPress={() =>
                                 togglePermission(permission.key)
                               }
-                              title={active ? 'Disable' : 'Enable'}
-                              variant={active ? 'outline' : 'primary'}
+                              label={active ? 'Disable' : 'Enable'}
+                              selected={false}
                             />
                           ) : null}
                         </View>

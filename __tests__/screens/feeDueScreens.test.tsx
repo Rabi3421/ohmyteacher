@@ -33,6 +33,7 @@ import {
   INITIAL_ORGANIZATION_STATE,
   organizationStore,
 } from '../../src/store/organization/organizationStore';
+import { currentOrganizationStore } from '../../src/store/organization/currentOrganizationStore';
 import {
   INITIAL_STUDENT_STATE,
   studentStore,
@@ -191,6 +192,39 @@ beforeEach(() => {
     loadAcademicSessions: jest.fn().mockResolvedValue(undefined),
     loadBranches: jest.fn().mockResolvedValue(undefined),
     loadSchool: jest.fn().mockResolvedValue(true),
+  });
+  // Branches and the school now come from the live current-organization
+  // store; only academic sessions stay on organizationStore.
+  const liveBranch = {
+    address: 'Bhubaneswar',
+    code: branch.code,
+    createdAt: '',
+    email: '',
+    id: branch.id,
+    name: branch.name,
+    phone: '',
+    schoolId: branch.schoolId,
+    status: 'ACTIVE' as const,
+  };
+  currentOrganizationStore.setState({
+    allBranches: [liveBranch],
+    branches: {
+      items: [liveBranch],
+      pagination: null,
+      totalItems: 1,
+    },
+    currentSchool: {
+      address: 'Bhubaneswar',
+      createdAt: '',
+      email: '',
+      id: 'school-omt',
+      name: 'OhMyTeacher School',
+      phone: '',
+      status: 'ACTIVE' as const,
+      upiId: '',
+    },
+    loadBranches: jest.fn().mockResolvedValue(undefined),
+    loadCurrentSchool: jest.fn().mockResolvedValue(true),
   });
   feeDueStore.setState({
     ...INITIAL_FEE_DUE_STATE,

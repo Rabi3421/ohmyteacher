@@ -2,7 +2,7 @@ import React from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import type { Branch } from '../../models/organization';
-import { AppButton } from '../common/AppButton';
+import { AppChoiceChip } from '../common/AppChoiceChip';
 import { AppText } from '../common/AppText';
 
 export interface BranchAssignmentPickerProps {
@@ -38,14 +38,12 @@ export function BranchAssignmentPicker({
         {branches
           .filter(branch => branch.status === 'ACTIVE')
           .map(branch => (
-            <AppButton
+            <AppChoiceChip
               disabled={disabled}
               key={branch.id}
               onPress={() => toggle(branch.id)}
-              title={`${selectedIds.includes(branch.id) ? '✓ ' : ''}${branch.name}`}
-              variant={
-                selectedIds.includes(branch.id) ? 'primary' : 'outline'
-              }
+              label={`${selectedIds.includes(branch.id) ? '✓ ' : ''}${branch.name}`}
+              selected={selectedIds.includes(branch.id)}
             />
           ))}
       </View>

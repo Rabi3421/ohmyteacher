@@ -210,6 +210,52 @@ function buildStudentSummary(studentId: string, invoices: BackendInvoice[]): Stu
 
 type QueryParams = Record<string, string | number | undefined>;
 
+/** True when the backend does not (yet) expose an endpoint. */
+function isMissingEndpoint(error: unknown): boolean {
+  return error instanceof ApiClientError && (error.status === 404 || error.status === 405);
+}
+
+interface BackendOutstandingSummary {
+  upcoming: string;
+  pending: string;
+  overdue: string;
+  accrued_fine: string;
+  total_outstanding: string;
+  students_with_outstanding: number;
+  unassigned_eligible_students: number;
+  as_of_date: string;
+}
+
+interface BackendGenerationPreviewItem {
+  student: number;
+  student_name: string;
+  admission_number: string;
+  class_name: string;
+  section_name: string;
+  branch: number;
+  period_key: string;
+  period_label: string;
+  due_date: string;
+  amount: string;
+  status: 'NEW' | 'EXISTING' | 'SKIPPED';
+  reason: string | null;
+  fee_heads: Array<{ fee_head: number; fee_head_name: string; amount: string }>;
+}
+
+interface BackendGenerationPreview {
+  generated_at: string;
+  period_key: string;
+  period_label: string;
+  due_date: string;
+  total_students: number;
+  eligible_students: number;
+  new_count: number;
+  existing_count: number;
+  skipped_count: number;
+  total_amount: string;
+  items: BackendGenerationPreviewItem[];
+}
+
 async function fetchInvoices(query: QueryParams = {}): Promise<BackendInvoice[]> {
   const raw = await apiClient.get<unknown>('/fees/invoices/', { query });
   if (
@@ -231,17 +277,44 @@ async function fetchInvoice(id: string): Promise<BackendInvoice> {
 // ---- Service implementation -------------------------------------------------
 
 export const apiFeeDueService: FeeDueService = {
-  async getOutstandingSummary(_schoolId, _branchId, _sessionId, asOfDate) {
+  async getOutstandingSummary(_schoolId, branchId, _sessionId, asOfDate) {
+    // Preferred path: the server aggregates every bucket, including the
+    // upcoming split and the unbilled-student count that cannot be derived
+    // from the invoice list alone.
+    try {
+      const raw = await apiClient.get<unknown>('/reports/fee-outstanding/', {
+        query: { as_of_date: asOfDate, branch: branchId },
+      });
+      const data = raw as unknown as BackendOutstandingSummary;
+      return success({
+        upcomingAmountPaise: toPaise(data.upcoming),
+        pendingAmountPaise: toPaise(data.pending),
+        overdueAmountPaise: toPaise(data.overdue),
+        accruedFinePaise: toPaise(data.accrued_fine),
+        totalOutstandingPaise: toPaise(data.total_outstanding),
+        studentsWithOutstanding: data.students_with_outstanding ?? 0,
+        unassignedEligibleStudents: data.unassigned_eligible_students ?? 0,
+        asOfDate: data.as_of_date ?? asOfDate,
+      } satisfies FeeOutstandingSummary);
+    } catch (error) {
+      if (!isMissingEndpoint(error)) throw error;
+    }
+
+    // Fallback for servers predating /reports/fee-outstanding/: derive what
+    // the invoice list supports and leave the rest at zero.
     const invoices = await fetchInvoices();
-    const pending = invoices.filter(i => i.status === 'pending').reduce((s, i) => s + toPaise(i.balance_due), 0);
-    const overdue = invoices.filter(i => i.status === 'overdue').reduce((s, i) => s + toPaise(i.balance_due), 0);
-    const fine = invoices.reduce((s, i) => s + toPaise(i.fine), 0);
+    const bucket = (predicate: (invoice: BackendInvoice) => boolean) =>
+      invoices.filter(predicate).reduce((sum, i) => sum + toPaise(i.balance_due), 0);
+    const upcoming = bucket(i => i.due_date > asOfDate && toPaise(i.balance_due) > 0);
+    const pending = bucket(i => i.due_date === asOfDate && toPaise(i.balance_due) > 0);
+    const overdue = bucket(i => i.due_date < asOfDate && toPaise(i.balance_due) > 0);
+    const fine = invoices.reduce((sum, i) => sum + toPaise(i.fine), 0);
     const studentsWithBalance = new Set(
       invoices.filter(i => toPaise(i.balance_due) > 0).map(i => i.student),
     ).size;
 
     const summary: FeeOutstandingSummary = {
-      upcomingAmountPaise: 0,
+      upcomingAmountPaise: upcoming,
       pendingAmountPaise: pending,
       overdueAmountPaise: overdue,
       accruedFinePaise: fine,
@@ -254,7 +327,7 @@ export const apiFeeDueService: FeeDueService = {
   },
 
   async previewFeeGeneration(_schoolId, input) {
-    const preview: FeeGenerationPreview = {
+    const base = {
       previewId: `preview-${Date.now()}`,
       expiresAt: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
       context: {
@@ -264,6 +337,60 @@ export const apiFeeDueService: FeeDueService = {
         asOfDate: input.asOfDate,
       },
       input,
+      generatedAt: new Date().toISOString(),
+    };
+
+    // Preferred path: the server dry-runs the exact generation logic, so the
+    // figures a user approves are the figures they get on commit.
+    try {
+      const raw = await apiClient.post<unknown>(
+        '/fees/generate-monthly/preview/',
+        { branch: Number(input.branchId) || undefined },
+      );
+      const data = raw as unknown as BackendGenerationPreview;
+      const items = (data.items ?? []).map(item => ({
+        idempotencyKey: `${item.student}-${item.period_key}`,
+        studentId: String(item.student),
+        enrollmentId: String(item.student),
+        studentName: item.student_name,
+        admissionNumber: item.admission_number,
+        className: item.class_name,
+        sectionName: item.section_name,
+        feeHeadName: item.fee_heads.map(head => head.fee_head_name).join(', '),
+        periodKey: item.period_key,
+        periodLabel: item.period_label,
+        dueDate: item.due_date,
+        baseAmountPaise: toPaise(item.amount),
+        discountAmountPaise: 0,
+        netAmountPaise: toPaise(item.amount),
+        status: item.status,
+        reason: item.reason ?? undefined,
+      }));
+
+      const preview: FeeGenerationPreview = {
+        ...base,
+        generatedAt: data.generated_at ?? base.generatedAt,
+        requestedPeriods: [{ key: data.period_key, label: data.period_label }],
+        totalStudents: data.total_students ?? 0,
+        eligibleStudents: data.eligible_students ?? 0,
+        candidateDueCount: (data.new_count ?? 0) + (data.existing_count ?? 0),
+        totalAmountPaise: toPaise(data.total_amount),
+        newDueCount: data.new_count ?? 0,
+        existingDueCount: data.existing_count ?? 0,
+        skippedCount: data.skipped_count ?? 0,
+        errorCount: 0,
+        items,
+        warnings: [],
+      };
+      return success(preview, 'Preview ready. Confirm to generate monthly fees.');
+    } catch (error) {
+      if (!isMissingEndpoint(error)) throw error;
+    }
+
+    // Fallback for servers predating the preview endpoint: the commit step
+    // still works, but the totals cannot be shown in advance.
+    const preview: FeeGenerationPreview = {
+      ...base,
       requestedPeriods: [],
       totalStudents: 0,
       eligibleStudents: 0,
@@ -274,10 +401,16 @@ export const apiFeeDueService: FeeDueService = {
       skippedCount: 0,
       errorCount: 0,
       items: [],
-      warnings: [],
-      generatedAt: new Date().toISOString(),
+      warnings: [
+        {
+          code: 'PREVIEW_UNAVAILABLE',
+          count: 1,
+          message:
+            'This server cannot preview generation. Totals will only be known after generating.',
+        },
+      ],
     };
-    return success(preview, 'Preview ready. Confirm to generate monthly fees.');
+    return success(preview, 'Preview unavailable on this server.');
   },
 
   async commitFeeGeneration(_schoolId, _input) {

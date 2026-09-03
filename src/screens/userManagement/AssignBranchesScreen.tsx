@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { AppButton } from '../../components/common/AppButton';
+import { AppChoiceChip } from '../../components/common/AppChoiceChip';
 import { AppCard } from '../../components/common/AppCard';
 import { AppHeader } from '../../components/common/AppHeader';
 import { AppScreen } from '../../components/common/AppScreen';
@@ -80,11 +81,11 @@ export function AssignBranchesScreen({
           </AppText>
           <View style={styles.options}>
             {activeBranches.map(branch => (
-              <AppButton
+              <AppChoiceChip
                 key={branch.id}
                 onPress={() => setSelectedId(branch.id)}
-                title={`${selectedId === branch.id ? '✓ ' : ''}${branch.name}`}
-                variant={selectedId === branch.id ? 'primary' : 'outline'}
+                label={`${selectedId === branch.id ? '✓ ' : ''}${branch.name}`}
+                selected={selectedId === branch.id}
               />
             ))}
           </View>

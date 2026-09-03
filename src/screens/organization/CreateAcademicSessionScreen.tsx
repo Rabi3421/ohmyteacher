@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { AppButton } from '../../components/common/AppButton';
+import { AppChoiceChip } from '../../components/common/AppChoiceChip';
 import { AppCard } from '../../components/common/AppCard';
 import { AppHeader } from '../../components/common/AppHeader';
 import { AppScreen } from '../../components/common/AppScreen';
@@ -71,11 +72,11 @@ export function CreateAcademicSessionScreen({
           </AppText>
           <View style={styles.statusActions}>
             {(['UPCOMING', 'ACTIVE'] as const).map(status => (
-              <AppButton
+              <AppChoiceChip
                 key={status}
                 onPress={() => setForm(current => ({ ...current, status }))}
-                title={status === 'UPCOMING' ? 'Upcoming' : 'Active'}
-                variant={form.status === status ? 'primary' : 'outline'}
+                label={status === 'UPCOMING' ? 'Upcoming' : 'Active'}
+                selected={form.status === status}
               />
             ))}
           </View>

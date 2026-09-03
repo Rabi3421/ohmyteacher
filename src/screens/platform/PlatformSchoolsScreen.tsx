@@ -3,6 +3,7 @@ import { StyleSheet, View } from 'react-native';
 
 import { AppBadge } from '../../components/common/AppBadge';
 import { AppButton } from '../../components/common/AppButton';
+import { AppChoiceChip } from '../../components/common/AppChoiceChip';
 import { AppCard } from '../../components/common/AppCard';
 import { AppScreen } from '../../components/common/AppScreen';
 import { AppSearchInput } from '../../components/common/AppSearchInput';
@@ -101,16 +102,16 @@ export function PlatformSchoolsScreen({
         />
         <View style={styles.filters}>
           {(['ALL', 'ACTIVE', 'INACTIVE'] as const).map(filter => (
-            <AppButton
+            <AppChoiceChip
               key={filter}
               onPress={() => setStatus(filter)}
               style={styles.filterButton}
-              title={
+              label={
                 filter === 'ALL'
                   ? 'All'
                   : filter[0] + filter.slice(1).toLowerCase()
               }
-              variant={status === filter ? 'primary' : 'outline'}
+              selected={status === filter}
             />
           ))}
         </View>

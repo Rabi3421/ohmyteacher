@@ -4,6 +4,7 @@ import { StyleSheet, View } from 'react-native';
 import { AcademicContextBar } from '../../components/academic/AcademicContextBar';
 import { AppBadge } from '../../components/common/AppBadge';
 import { AppButton } from '../../components/common/AppButton';
+import { AppChoiceChip } from '../../components/common/AppChoiceChip';
 import { AppCard } from '../../components/common/AppCard';
 import { AppHeader } from '../../components/common/AppHeader';
 import { AppScreen } from '../../components/common/AppScreen';
@@ -100,7 +101,8 @@ export function ClassSubjectAssignmentScreen({ navigation, route }: RoleScreenPr
                   </View>
                   <View style={styles.teachers}>
                     {teachers.map(teacher => (
-                      <AppButton disabled={!canAssign || subject.status !== 'ACTIVE'} key={teacher.id} onPress={() => setSelected(current => ({ ...current, [subject.id]: teacher.id }))} title={teacher.name} variant={selected[subject.id] === teacher.id ? 'primary' : 'outline'} />
+                      <AppChoiceChip disabled={!canAssign || subject.status !== 'ACTIVE'} key={teacher.id} onPress={() => setSelected(current => ({ ...current, [subject.id]: teacher.id }))} label={teacher.name}
+                        selected={selected[subject.id] === teacher.id} />
                     ))}
                     {selectedTeacher && canAssign ? <AppButton onPress={() => setSelected(current => { const next = { ...current }; delete next[subject.id]; return next; })} title="Unassign" variant="danger" /> : null}
                   </View>

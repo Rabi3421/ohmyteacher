@@ -4,6 +4,7 @@ import {
   Platform,
   RefreshControl,
   ScrollView,
+  StatusBar,
   StyleSheet,
   View,
   type ScrollViewProps,
@@ -16,8 +17,6 @@ import {
 } from 'react-native-safe-area-context';
 
 import { useAppTheme } from '../../hooks/useAppTheme';
-import { TAB_BAR_HEIGHT } from './AppBottomTabBar';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export interface ScreenContainerProps {
   children: ReactNode;
@@ -49,13 +48,14 @@ export function ScreenContainer({
   testID,
 }: ScreenContainerProps) {
   const theme = useAppTheme();
-  const insets = useSafeAreaInsets();
   const background = backgroundColor ?? theme.colors.background;
-  const tabBarBottomPad = TAB_BAR_HEIGHT + Math.max(insets.bottom, 8);
+  // The bottom tab bar is a sibling of the screen (see TabBarWrapper), so it
+  // already occupies its own layout space — reserving TAB_BAR_HEIGHT here too
+  // left a screen-height of dead space under every scroll view.
   const contentStyles: StyleProp<ViewStyle> = [
     styles.content,
     padded && { paddingHorizontal: theme.layout.screenPadding },
-    scrollable && { paddingBottom: tabBarBottomPad },
+    scrollable && { paddingBottom: theme.spacing.xl },
     contentContainerStyle,
   ];
   const content = scrollable ? (
@@ -97,6 +97,13 @@ export function ScreenContainer({
         style={[styles.container, { backgroundColor: background }, style]}
         testID={testID}
       >
+      {/* Tab roots paint a light-on-gradient status bar; content screens sit on
+          a light background and must claim the dark treatment back, including
+          the ones that render only an ErrorState with no header. */}
+      <StatusBar
+        backgroundColor={background}
+        barStyle={theme.mode === 'dark' ? 'light-content' : 'dark-content'}
+      />
         {keyboardContent}
       </View>
     );
@@ -108,6 +115,13 @@ export function ScreenContainer({
       style={[styles.container, { backgroundColor: background }, style]}
       testID={testID}
     >
+      {/* Tab roots paint a light-on-gradient status bar; content screens sit on
+          a light background and must claim the dark treatment back, including
+          the ones that render only an ErrorState with no header. */}
+      <StatusBar
+        backgroundColor={background}
+        barStyle={theme.mode === 'dark' ? 'light-content' : 'dark-content'}
+      />
       {keyboardContent}
     </SafeAreaView>
   );

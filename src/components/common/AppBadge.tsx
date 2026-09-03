@@ -84,7 +84,12 @@ export function AppBadge({ status, label = LABELS[status], style, ...props }: Ap
       {...props}
     >
       <View style={[styles.dot, { backgroundColor: toneColors.foreground }]} />
-      <AppText color={toneColors.foreground} numberOfLines={1} variant="caption">
+      <AppText
+        color={toneColors.foreground}
+        numberOfLines={1}
+        style={styles.label}
+        variant="caption"
+      >
         {label}
       </AppText>
     </View>
@@ -97,8 +102,11 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     borderRadius: 999,
     flexDirection: 'row',
-    minHeight: 28,
-    paddingHorizontal: 10,
+    minHeight: 26,
+    paddingHorizontal: 11,
+  },
+  label: {
+    fontWeight: '600',
   },
   dot: {
     borderRadius: 4,

@@ -3,6 +3,7 @@ import { StyleSheet, View } from 'react-native';
 
 import { AcademicContextBar } from '../../components/academic/AcademicContextBar';
 import { AppButton } from '../../components/common/AppButton';
+import { AppChoiceChip } from '../../components/common/AppChoiceChip';
 import { AppCard } from '../../components/common/AppCard';
 import { AppHeader } from '../../components/common/AppHeader';
 import { AppInput } from '../../components/common/AppInput';
@@ -65,9 +66,11 @@ export function CreateStudentScreen({ navigation, route }: RoleScreenProps<'Crea
     <AcademicContextBar schoolId={route.params.schoolId} />
     {!reviewing ? <View style={styles.fields}>
       <AppText variant="label">Active Class</AppText>
-      <View style={styles.options}>{classes.filter(item => item.status === 'ACTIVE').map(item => <AppButton key={item.id} onPress={() => setValue(current => ({ ...current, classId: item.id, sectionId: '' }))} title={item.name} variant={value.classId === item.id ? 'primary' : 'outline'} />)}</View>
+      <View style={styles.options}>{classes.filter(item => item.status === 'ACTIVE').map(item => <AppChoiceChip key={item.id} onPress={() => setValue(current => ({ ...current, classId: item.id, sectionId: '' }))} label={item.name}
+            selected={value.classId === item.id} />)}</View>
       <AppText variant="label">Active Section</AppText>
-      <View style={styles.options}>{sections.filter(item => item.classId === value.classId && item.status === 'ACTIVE').map(item => <AppButton key={item.id} onPress={() => setValue(current => ({ ...current, sectionId: item.id }))} title={item.name} variant={value.sectionId === item.id ? 'primary' : 'outline'} />)}</View>
+      <View style={styles.options}>{sections.filter(item => item.classId === value.classId && item.status === 'ACTIVE').map(item => <AppChoiceChip key={item.id} onPress={() => setValue(current => ({ ...current, sectionId: item.id }))} label={item.name}
+            selected={value.sectionId === item.id} />)}</View>
       <AppInput disabled={saving} error={error?.fieldErrors?.name} label="Student Name" onChangeText={name => setValue({ ...value, name })} required value={value.name} />
       <AppInput disabled={saving} error={error?.fieldErrors?.dateOfBirth} helperText="YYYY-MM-DD or blank" label="Date of Birth" onChangeText={dateOfBirth => setValue({ ...value, dateOfBirth: dateOfBirth || null })} value={value.dateOfBirth ?? ''} />
       <AppInput disabled={saving} error={error?.fieldErrors?.gender} helperText="The backend stores free text" label="Gender" onChangeText={gender => setValue({ ...value, gender })} value={value.gender ?? ''} />

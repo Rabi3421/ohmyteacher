@@ -205,11 +205,13 @@ export const apiCollectionService: CollectionService = {
     const data = raw as Record<string, unknown>;
     const totalPaise = toPaise(data.total_collection as string);
     const byMode = (data.by_mode as Record<string, string>) ?? {};
+    // by_mode_count is served alongside by_mode; older servers omit it.
+    const byModeCount = (data.by_mode_count as Record<string, number>) ?? {};
 
     const byModeArr = Object.entries(byMode).map(([mode, amount]) => ({
       paymentMode: (MODE_MAP[mode] ?? mode) as import('../../models/collection').PaymentMode,
       totalAmountPaise: toPaise(amount),
-      transactionCount: 0,
+      transactionCount: byModeCount[mode] ?? 0,
     }));
 
     const summary: CollectionDashboardSummary = {
@@ -659,6 +661,7 @@ export const apiCollectionService: CollectionService = {
     const data = raw as Record<string, unknown>;
     const totalPaise = toPaise(data.total_collection as string);
     const byMode = (data.by_mode as Record<string, string>) ?? {};
+    const byModeCount = (data.by_mode_count as Record<string, number>) ?? {};
 
     const modeMap2: Record<string, string> = { cash: 'CASH', upi: 'UPI', bank_transfer: 'BANK_TRANSFER', cheque: 'CHEQUE', card: 'CARD' };
     const summary: DailyCollectionSummary = {
@@ -674,7 +677,7 @@ export const apiCollectionService: CollectionService = {
       paymentCount: (data.payment_count as number) ?? 0,
       modes: Object.entries(byMode).map(([mode, amount]) => ({
         mode: (modeMap2[mode] ?? 'CASH') as import('../../models/collection').PaymentMode,
-        count: 0,
+        count: byModeCount[mode] ?? 0,
         amountPaise: toPaise(amount),
       })),
       collectors: [],

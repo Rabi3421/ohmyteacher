@@ -12,6 +12,7 @@ import {
 } from '../../components/collection/CollectionComponents';
 import { AppBadge } from '../../components/common/AppBadge';
 import { AppButton } from '../../components/common/AppButton';
+import { AppChoiceChip } from '../../components/common/AppChoiceChip';
 import { AppCard } from '../../components/common/AppCard';
 import { AppHeader } from '../../components/common/AppHeader';
 import { AppInput } from '../../components/common/AppInput';
@@ -31,10 +32,10 @@ import type {
   StudentLedgerEntryType,
 } from '../../models/collection';
 import type { RoleScreenProps } from '../../navigation/navigationTypes';
-import { getDownstreamMockAcademicSessions } from '../../services/academic/downstreamMockAcademicIdentity';
 import {
   useAuthStore,
   useCollectionStore,
+  useCurrentOrganizationStore,
   useOrganizationStore,
   useStudentStore,
 } from '../../store';
@@ -139,9 +140,9 @@ function ErrorOrLoading({
 }
 
 function ContextBanner({ params }: { params: ContextParams }) {
-  const branches = useOrganizationStore(state => state.branches.items);
-  const sessions = getDownstreamMockAcademicSessions(params.schoolId);
-  const school = useOrganizationStore(state => state.currentSchool);
+  const branches = useCurrentOrganizationStore(state => state.allBranches);
+  const sessions = useOrganizationStore(state => state.academicSessions);
+  const school = useCurrentOrganizationStore(state => state.currentSchool);
   return (
     <FeeContextBar
       branch={
@@ -163,11 +164,22 @@ export function CollectionDashboardScreen({
   route,
 }: RoleScreenProps<'CollectionDashboard'>) {
   const membership = useAuthStore(state => state.activeMembership);
-  const branches = useOrganizationStore(state => state.branches.items);
-  const sessions = getDownstreamMockAcademicSessions(route.params.schoolId);
-  const school = useOrganizationStore(state => state.currentSchool);
-  const loadSchool = useOrganizationStore(state => state.loadSchool);
-  const loadBranches = useOrganizationStore(state => state.loadBranches);
+  // Collections post real payments against the live backend, so branches and
+  // the school come from the live current-organization store; only academic
+  // sessions are live on useOrganizationStore.
+  const branches = useCurrentOrganizationStore(state => state.allBranches);
+  const sessions = useOrganizationStore(state => state.academicSessions);
+  const isLoadingSessions = useOrganizationStore(
+    state => state.isLoadingSessions,
+  );
+  const school = useCurrentOrganizationStore(state => state.currentSchool);
+  const loadSchool = useCurrentOrganizationStore(
+    state => state.loadCurrentSchool,
+  );
+  const loadBranches = useCurrentOrganizationStore(state => state.loadBranches);
+  const loadAcademicSessions = useOrganizationStore(
+    state => state.loadAcademicSessions,
+  );
   const [branchId, setBranchId] = useState(
     route.params.branchId ?? membership?.branchId,
   );
@@ -185,8 +197,9 @@ export function CollectionDashboardScreen({
     Promise.all([
       loadSchool(route.params.schoolId),
       loadBranches(route.params.schoolId),
+      loadAcademicSessions(route.params.schoolId),
     ]).catch(() => undefined);
-  }, [loadBranches, loadSchool, route.params.schoolId]);
+  }, [loadAcademicSessions, loadBranches, loadSchool, route.params.schoolId]);
   useEffect(() => {
     if (!branchId)
       setBranchId(
@@ -222,8 +235,17 @@ export function CollectionDashboardScreen({
     setContext,
   ]);
 
-  if (sessions.length === 0) {
-    return <AppScreen testID="collection-dashboard-screen"><ErrorState message="Collections are still a demo module and have no mock academic identity matching this live school. No live academic IDs were sent to them." title="Demo context unavailable" /></AppScreen>;
+  if (sessions.length === 0 && !isLoadingSessions) {
+    return (
+      <AppScreen testID="collection-dashboard-screen">
+        <ErrorState
+          message="Create an academic session for this school before collecting payments."
+          onRetry={() => loadAcademicSessions(route.params.schoolId)}
+          retryLabel="Reload sessions"
+          title="No academic session yet"
+        />
+      </AppScreen>
+    );
   }
 
   if (!branch || !session)
@@ -265,22 +287,22 @@ export function CollectionDashboardScreen({
               (!membership?.branchId || item.id === membership.branchId),
           )
           .map(item => (
-            <AppButton
+            <AppChoiceChip
               key={item.id}
               onPress={() => setBranchId(item.id)}
-              title={item.name}
-              variant={item.id === branch.id ? 'primary' : 'outline'}
+              label={item.name}
+              selected={item.id === branch.id}
             />
           ))}
       </View>
       <AppText variant="label">Academic Session</AppText>
       <View style={styles.options}>
         {sessions.map(item => (
-          <AppButton
+          <AppChoiceChip
             key={item.id}
             onPress={() => setSessionId(item.id)}
-            title={`${item.name}${item.status === 'CLOSED' ? ' · Closed' : ''}`}
-            variant={item.id === session.id ? 'primary' : 'outline'}
+            label={`${item.name}${item.status === 'CLOSED' ? ' · Closed' : ''}`}
+            selected={item.id === session.id}
           />
         ))}
       </View>
@@ -649,11 +671,11 @@ export function PaymentDetailsEntryScreen({
       <AppText variant="label">Payment Mode</AppText>
       <View style={styles.options}>
         {PAYMENT_MODES.map(mode => (
-          <AppButton
+          <AppChoiceChip
             key={mode}
             onPress={() => update({ paymentMode: mode })}
-            title={mode.replace('_', ' ')}
-            variant={draft.input.paymentMode === mode ? 'primary' : 'outline'}
+            label={mode.replace('_', ' ')}
+            selected={draft.input.paymentMode === mode}
           />
         ))}
       </View>
@@ -713,17 +735,17 @@ export function PaymentDetailsEntryScreen({
       />
       <AppText variant="label">Allocation</AppText>
       <View style={styles.options}>
-        <AppButton
+        <AppChoiceChip
           onPress={() =>
             update({
               allocationMode: 'OLDEST_DUE_FIRST',
               manualAllocations: [],
             })
           }
-          title="Oldest Due First"
-          variant={!manual ? 'primary' : 'outline'}
+          label="Oldest Due First"
+          selected={!manual}
         />
-        <AppButton
+        <AppChoiceChip
           onPress={() =>
             update({
               allocationMode: 'MANUAL',
@@ -733,8 +755,8 @@ export function PaymentDetailsEntryScreen({
               })),
             })
           }
-          title="Manual"
-          variant={manual ? 'primary' : 'outline'}
+          label="Manual"
+          selected={manual}
         />
       </View>
       {manual
@@ -1008,27 +1030,23 @@ export function PaymentsScreen({
       />
       <View style={styles.options}>
         {(['ALL', 'POSTED', 'REVERSED'] as const).map(status => (
-          <AppButton
+          <AppChoiceChip
             key={status}
             onPress={() => setQuery({ status })}
-            title={status}
-            variant={query.status === status ? 'primary' : 'outline'}
+            label={status}
+            selected={query.status === status}
           />
         ))}
       </View>
       <AppText variant="label">Payment Mode</AppText>
       <View style={styles.options}>
         {(['ALL', ...PAYMENT_MODES] as const).map(mode => (
-          <AppButton
+          <AppChoiceChip
             key={mode}
             onPress={() => setQuery({ page: 1, paymentMode: mode })}
-            title={mode.replace('_', ' ')}
-            variant={
-              query.paymentMode === mode ||
-              (!query.paymentMode && mode === 'ALL')
-                ? 'primary'
-                : 'outline'
-            }
+            label={mode.replace('_', ' ')}
+            selected={query.paymentMode === mode ||
+              (!query.paymentMode && mode === 'ALL')}
           />
         ))}
       </View>
@@ -1368,27 +1386,23 @@ export function ReceiptsScreen({
       />
       <View style={styles.options}>
         {(['ALL', 'ACTIVE', 'CANCELLED'] as const).map(status => (
-          <AppButton
+          <AppChoiceChip
             key={status}
             onPress={() => setQuery({ status })}
-            title={status}
-            variant={query.status === status ? 'primary' : 'outline'}
+            label={status}
+            selected={query.status === status}
           />
         ))}
       </View>
       <AppText variant="label">Payment Mode</AppText>
       <View style={styles.options}>
         {(['ALL', ...PAYMENT_MODES] as const).map(mode => (
-          <AppButton
+          <AppChoiceChip
             key={mode}
             onPress={() => setQuery({ page: 1, paymentMode: mode })}
-            title={mode.replace('_', ' ')}
-            variant={
-              query.paymentMode === mode ||
-              (!query.paymentMode && mode === 'ALL')
-                ? 'primary'
-                : 'outline'
-            }
+            label={mode.replace('_', ' ')}
+            selected={query.paymentMode === mode ||
+              (!query.paymentMode && mode === 'ALL')}
           />
         ))}
       </View>
@@ -1701,11 +1715,11 @@ export function StudentLedgerScreen({
             'PAYMENT_REVERSED',
           ] as const
         ).map(value => (
-          <AppButton
+          <AppChoiceChip
             key={value}
             onPress={() => setEntryType(value)}
-            title={value.replaceAll('_', ' ')}
-            variant={entryType === value ? 'primary' : 'outline'}
+            label={value.replaceAll('_', ' ')}
+            selected={entryType === value}
           />
         ))}
       </View>

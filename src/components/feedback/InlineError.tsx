@@ -45,9 +45,9 @@ const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
     borderLeftWidth: 3,
-    borderRadius: 8,
+    borderRadius: 12,
     flexDirection: 'row',
-    padding: 10,
+    padding: 12,
   },
   message: {
     flex: 1,

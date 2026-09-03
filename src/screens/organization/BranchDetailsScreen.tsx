@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
+import { AppDetailRow } from '../../components/common/AppDetailRow';
 import { AppBadge } from '../../components/common/AppBadge';
 import { AppButton } from '../../components/common/AppButton';
 import { AppCard } from '../../components/common/AppCard';
@@ -103,11 +104,11 @@ export function BranchDetailsScreen({
           {mutationError ? <InlineError message={mutationError.message} style={styles.notice} /> : null}
           <AppCard style={styles.card} variant="outlined">
             <Detail label="School" value={school?.name ?? 'Current school'} />
-            <Detail label="Code" value={branch.code} />
-            <Detail label="Phone" value={maskPhone(branch.phone)} />
-            <Detail label="Email" value={branch.email || '—'} />
-            <Detail label="Address" value={branch.address || '—'} />
-            <Detail label="Created" value={formatDisplayDate(branch.createdAt)} />
+            <Detail divided label="Code" value={branch.code} />
+            <Detail divided label="Phone" value={maskPhone(branch.phone)} />
+            <Detail divided label="Email" value={branch.email || '—'} />
+            <Detail divided label="Address" value={branch.address || '—'} />
+            <Detail divided label="Created" value={formatDisplayDate(branch.createdAt)} />
           </AppCard>
           <AppCard style={styles.card} variant="outlined">
             <AppText variant="title">Backend scope</AppText>
@@ -158,14 +159,16 @@ export function BranchDetailsScreen({
   );
 }
 
-function Detail({ label, value }: { label: string; value: string }) {
-  const theme = useAppTheme();
-  return (
-    <View style={styles.detail}>
-      <AppText color={theme.colors.textSecondary}>{label}</AppText>
-      <AppText align="right" style={styles.detailValue} variant="bodyMedium">{value}</AppText>
-    </View>
-  );
+function Detail({
+  label,
+  value,
+  divided,
+}: {
+  label: string;
+  value: string;
+  divided?: boolean;
+}) {
+  return <AppDetailRow divided={divided} label={label} value={value} />;
 }
 
 const styles = StyleSheet.create({

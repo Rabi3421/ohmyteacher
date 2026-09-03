@@ -41,9 +41,12 @@ export type AppIconName =
   | 'layers'
   | 'lock'
   | 'log-in'
+  | 'mail'
+  | 'map-pin'
   | 'log-out'
   | 'menu'
   | 'more-horizontal'
+  | 'phone'
   | 'plus'
   | 'refresh'
   | 'search'
@@ -109,6 +112,30 @@ export function AppIcon({
               {...shared}
             />
           </>
+        );
+      case 'mail':
+        return (
+          <>
+            <Rect height="14" rx="2.5" width="18" x="3" y="5" {...shared} />
+            <Polyline points="3.5 7 12 13 20.5 7" {...shared} />
+          </>
+        );
+      case 'map-pin':
+        return (
+          <>
+            <Path
+              d="M12 21c4.2-4.6 6.3-8 6.3-10.7A6.3 6.3 0 0 0 5.7 10.3C5.7 13 7.8 16.4 12 21Z"
+              {...shared}
+            />
+            <Circle cx="12" cy="10.2" r="2.4" {...shared} />
+          </>
+        );
+      case 'phone':
+        return (
+          <Path
+            d="M7.6 3.5 9.4 8 7.3 9.9a12.4 12.4 0 0 0 6.8 6.8L16 14.6l4.5 1.8v3.1a1.6 1.6 0 0 1-1.8 1.6C10.4 20.4 3.6 13.6 2.9 5.3A1.6 1.6 0 0 1 4.5 3.5Z"
+            {...shared}
+          />
         );
       case 'chevron-down':
         return <Polyline points="6 9 12 15 18 9" {...shared} />;

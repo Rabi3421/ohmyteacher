@@ -42,7 +42,7 @@ export function AppListRow({
     <View style={[styles.row, { borderBottomColor: theme.colors.border }]}>
       {leftIcon && (
         <View style={[styles.leftIconBox, { backgroundColor: iconBg }]}>
-          <AppIcon color={iconColor} name={leftIcon} size={18} strokeWidth={1.8} />
+          <AppIcon color={iconColor} name={leftIcon} size={19} strokeWidth={2} />
         </View>
       )}
       <View style={styles.textArea}>
@@ -86,10 +86,10 @@ export function AppListRow({
 const styles = StyleSheet.create({
   leftIconBox: {
     alignItems: 'center',
-    borderRadius: 10,
-    height: 36,
+    borderRadius: 12,
+    height: 40,
     justifyContent: 'center',
-    width: 36,
+    width: 40,
   },
   pressed: {
     opacity: 0.7,
@@ -99,9 +99,9 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
     flexDirection: 'row',
     gap: 12,
-    minHeight: 56,
+    minHeight: 60,
     paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingVertical: 11,
   },
   textArea: {
     flex: 1,

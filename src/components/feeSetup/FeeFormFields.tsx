@@ -14,6 +14,7 @@ import type {
 } from '../../models/fee';
 import type { FeeFormErrors } from '../../utils/feeValidation';
 import { AppButton } from '../common/AppButton';
+import { AppChoiceChip } from '../common/AppChoiceChip';
 import { AppInput } from '../common/AppInput';
 import { AppText } from '../common/AppText';
 
@@ -57,7 +58,7 @@ export function FeeHeadFormFields({
       <AppText variant="label">Type</AppText>
       <View style={styles.options}>
         {(['RECURRING', 'ONE_TIME'] as const).map(type => (
-          <AppButton
+          <AppChoiceChip
             key={type}
             onPress={() =>
               onChange({
@@ -67,8 +68,8 @@ export function FeeHeadFormFields({
                 type,
               })
             }
-            title={type.replace('_', ' ')}
-            variant={value.type === type ? 'primary' : 'outline'}
+            label={type.replace('_', ' ')}
+            selected={value.type === type}
           />
         ))}
       </View>
@@ -83,7 +84,7 @@ export function FeeHeadFormFields({
             'ONE_TIME',
           ] as FeeFrequency[]
         ).map(frequency => (
-          <AppButton
+          <AppChoiceChip
             disabled={
               disabled ||
               (value.type === 'ONE_TIME' && frequency !== 'ONE_TIME') ||
@@ -91,10 +92,8 @@ export function FeeHeadFormFields({
             }
             key={frequency}
             onPress={() => onChange({ ...value, defaultFrequency: frequency })}
-            title={frequency.replace('_', ' ')}
-            variant={
-              value.defaultFrequency === frequency ? 'primary' : 'outline'
-            }
+            label={frequency.replace('_', ' ')}
+            selected={value.defaultFrequency === frequency}
           />
         ))}
       </View>
@@ -109,30 +108,30 @@ export function FeeHeadFormFields({
         value={String(value.displayOrder || '')}
       />
       <View style={styles.options}>
-        <AppButton
+        <AppChoiceChip
           onPress={() =>
             onChange({
               ...value,
               mandatoryByDefault: !value.mandatoryByDefault,
             })
           }
-          title="Mandatory by Default"
-          variant={value.mandatoryByDefault ? 'primary' : 'outline'}
+          label="Mandatory by Default"
+          selected={value.mandatoryByDefault}
         />
-        <AppButton
+        <AppChoiceChip
           onPress={() => onChange({ ...value, refundable: !value.refundable })}
-          title="Refundable"
-          variant={value.refundable ? 'primary' : 'outline'}
+          label="Refundable"
+          selected={value.refundable}
         />
-        <AppButton
+        <AppChoiceChip
           onPress={() =>
             onChange({
               ...value,
               status: value.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE',
             })
           }
-          title={value.status}
-          variant={value.status === 'ACTIVE' ? 'primary' : 'outline'}
+          label={value.status}
+          selected={value.status === 'ACTIVE'}
         />
       </View>
     </View>
@@ -175,11 +174,11 @@ export function FeeStructureItemEditor({
         ).map(value => {
           const frequency = value as FeeFrequency;
           return (
-            <AppButton
+            <AppChoiceChip
               key={frequency}
               onPress={() => onChange({ ...item, frequency })}
-              title={frequency.replace('_', ' ')}
-              variant={item.frequency === frequency ? 'primary' : 'outline'}
+              label={frequency.replace('_', ' ')}
+              selected={item.frequency === frequency}
             />
           );
         })}
@@ -193,44 +192,40 @@ export function FeeStructureItemEditor({
             'MANUAL_ASSIGNMENT',
           ] as FeeApplicability[]
         ).map(applicability => (
-          <AppButton
+          <AppChoiceChip
             key={applicability}
             onPress={() => onChange({ ...item, applicability })}
-            title={applicability.replace('_', ' ')}
-            variant={item.applicability === applicability ? 'primary' : 'outline'}
+            label={applicability.replace('_', ' ')}
+            selected={item.applicability === applicability}
           />
         ))}
       </View>
-      <AppButton
+      <AppChoiceChip
         onPress={() => onChange({ ...item, mandatory: !item.mandatory })}
-        title={item.mandatory ? 'Mandatory' : 'Optional'}
-        variant={item.mandatory ? 'primary' : 'outline'}
+        label={item.mandatory ? 'Mandatory' : 'Optional'}
+        selected={item.mandatory}
       />
       <AppText variant="label">Due Rule</AppText>
       <View style={styles.options}>
-        <AppButton
+        <AppChoiceChip
           onPress={() =>
             onChange({
               ...item,
               dueRule: { day: 10, type: 'FIXED_DAY_OF_PERIOD' },
             })
           }
-          title="Fixed Day"
-          variant={
-            item.dueRule.type === 'FIXED_DAY_OF_PERIOD'
-              ? 'primary'
-              : 'outline'
-          }
+          label="Fixed Day"
+          selected={item.dueRule.type === 'FIXED_DAY_OF_PERIOD'}
         />
-        <AppButton
+        <AppChoiceChip
           onPress={() =>
             onChange({
               ...item,
               dueRule: { date: '', type: 'FIXED_DATE' },
             })
           }
-          title="Fixed Date"
-          variant={item.dueRule.type === 'FIXED_DATE' ? 'primary' : 'outline'}
+          label="Fixed Date"
+          selected={item.dueRule.type === 'FIXED_DATE'}
         />
       </View>
       {item.dueRule.type === 'FIXED_DAY_OF_PERIOD' ? (
@@ -286,19 +281,19 @@ export function FeeStructureItemEditor({
       ) : null}
       <AppText variant="label">Fine Rule (optional)</AppText>
       <View style={styles.options}>
-        <AppButton
+        <AppChoiceChip
           onPress={() => onChange({ ...item, fineRuleId: undefined })}
-          title="None"
-          variant={!item.fineRuleId ? 'primary' : 'outline'}
+          label="None"
+          selected={!item.fineRuleId}
         />
         {fineRules
           .filter(rule => rule.status === 'ACTIVE')
           .map(rule => (
-            <AppButton
+            <AppChoiceChip
               key={rule.id}
               onPress={() => onChange({ ...item, fineRuleId: rule.id })}
-              title={rule.name}
-              variant={item.fineRuleId === rule.id ? 'primary' : 'outline'}
+              label={rule.name}
+              selected={item.fineRuleId === rule.id}
             />
           ))}
       </View>
@@ -339,11 +334,11 @@ export function DiscountFormFields({
       />
       <View style={styles.options}>
         {(['FIXED', 'PERCENTAGE'] as const).map(type => (
-          <AppButton
+          <AppChoiceChip
             key={type}
             onPress={() => onChange({ ...value, type })}
-            title={type}
-            variant={value.type === type ? 'primary' : 'outline'}
+            label={type}
+            selected={value.type === type}
           />
         ))}
       </View>
@@ -359,11 +354,11 @@ export function DiscountFormFields({
             'OTHER',
           ] as DiscountCategory[]
         ).map(category => (
-          <AppButton
+          <AppChoiceChip
             key={category}
             onPress={() => onChange({ ...value, category })}
-            title={category.replace('_', ' ')}
-            variant={value.category === category ? 'primary' : 'outline'}
+            label={category.replace('_', ' ')}
+            selected={value.category === category}
           />
         ))}
       </View>
@@ -414,12 +409,12 @@ export function DiscountFormFields({
         }
         value={value.endDate ?? ''}
       />
-      <AppButton
+      <AppChoiceChip
         onPress={() =>
           onChange({ ...value, reasonRequired: !value.reasonRequired })
         }
-        title="Reason Required"
-        variant={value.reasonRequired ? 'primary' : 'outline'}
+        label="Reason Required"
+        selected={value.reasonRequired}
       />
     </View>
   );
@@ -452,11 +447,11 @@ export function FineRuleFormFields({
         {(
           ['FIXED_AFTER_DUE', 'DAILY_AFTER_DUE', 'SLAB_BASED'] as const
         ).map(type => (
-          <AppButton
+          <AppChoiceChip
             key={type}
             onPress={() => onChange({ ...value, type })}
-            title={type.split('_').join(' ')}
-            variant={value.type === type ? 'primary' : 'outline'}
+            label={type.split('_').join(' ')}
+            selected={value.type === type}
           />
         ))}
       </View>

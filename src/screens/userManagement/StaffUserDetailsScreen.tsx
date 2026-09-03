@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
+import { AppDetailRow } from '../../components/common/AppDetailRow';
 import { AppAvatar } from '../../components/common/AppAvatar';
 import { AppBadge } from '../../components/common/AppBadge';
 import { AppButton } from '../../components/common/AppButton';
@@ -96,15 +97,15 @@ export function StaffUserDetailsScreen({
           <AppCard style={styles.card} variant="outlined">
             <AppText variant="title">Django user account</AppText>
             <Detail label="Mobile" value={staff.mobile} />
-            <Detail label="Fixed Role" value={getBackendStaffRoleLabel(staff.role)} />
-            <Detail label="Status" value={staff.status === 'ACTIVE' ? 'Active' : 'Inactive'} />
-            <Detail label="Joined" value={formatDisplayDate(staff.joinedAt)} />
+            <Detail divided label="Fixed Role" value={getBackendStaffRoleLabel(staff.role)} />
+            <Detail divided label="Status" value={staff.status === 'ACTIVE' ? 'Active' : 'Inactive'} />
+            <Detail divided label="Joined" value={formatDisplayDate(staff.joinedAt)} />
           </AppCard>
           <AppCard style={styles.card} variant="outlined">
             <AppText variant="title">Server-owned scope</AppText>
             <Detail label="School" value={school?.id === schoolId ? school.name : 'Current school'} />
-            <Detail label="Branch" value={staff.branch.name ?? 'Unavailable branch'} />
-            <Detail label="Branch ID" value={staff.branch.id} />
+            <Detail divided label="Branch" value={staff.branch.name ?? 'Unavailable branch'} />
+            <Detail divided label="Branch ID" value={staff.branch.id} />
             <AppText style={styles.helper} variant="caption">
               Django stores one school and one branch directly on this User. This is not a configurable membership.
             </AppText>
@@ -154,14 +155,16 @@ export function StaffUserDetailsScreen({
   );
 }
 
-function Detail({ label, value }: { label: string; value: string }) {
-  const theme = useAppTheme();
-  return (
-    <View style={styles.detail}>
-      <AppText color={theme.colors.textSecondary}>{label}</AppText>
-      <AppText align="right" style={styles.detailValue} variant="bodyMedium">{value}</AppText>
-    </View>
-  );
+function Detail({
+  label,
+  value,
+  divided,
+}: {
+  label: string;
+  value: string;
+  divided?: boolean;
+}) {
+  return <AppDetailRow divided={divided} label={label} value={value} />;
 }
 
 const styles = StyleSheet.create({

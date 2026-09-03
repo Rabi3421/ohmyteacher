@@ -4,6 +4,7 @@ import { StyleSheet, View } from 'react-native';
 import { AcademicContextBar } from '../../components/academic/AcademicContextBar';
 import { AppBadge } from '../../components/common/AppBadge';
 import { AppButton } from '../../components/common/AppButton';
+import { AppChoiceChip } from '../../components/common/AppChoiceChip';
 import { AppCard } from '../../components/common/AppCard';
 import { AppHeader } from '../../components/common/AppHeader';
 import { AppScreen } from '../../components/common/AppScreen';
@@ -95,15 +96,15 @@ export function ClassesScreen({
           />
           <View style={styles.filters}>
             {(['ALL', 'ACTIVE', 'INACTIVE'] as const).map(option => (
-              <AppButton
+              <AppChoiceChip
                 key={option}
                 onPress={() => setStatus(option)}
-                title={
+                label={
                   option === 'ALL'
                     ? 'All'
                     : option[0] + option.slice(1).toLowerCase()
                 }
-                variant={status === option ? 'primary' : 'outline'}
+                selected={status === option}
               />
             ))}
           </View>

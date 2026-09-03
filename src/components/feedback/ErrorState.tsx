@@ -68,7 +68,8 @@ export function ErrorState({
 
 const styles = StyleSheet.create({
   action: {
-    marginTop: 18,
+    marginTop: 20,
+    minWidth: 180,
   },
   container: {
     alignItems: 'center',
@@ -78,11 +79,11 @@ const styles = StyleSheet.create({
   },
   iconContainer: {
     alignItems: 'center',
-    borderRadius: 28,
-    height: 64,
+    borderRadius: 26,
+    height: 76,
     justifyContent: 'center',
-    marginBottom: 16,
-    width: 64,
+    marginBottom: 18,
+    width: 76,
   },
   message: {
     marginTop: 6,

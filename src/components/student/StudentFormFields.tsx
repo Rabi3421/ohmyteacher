@@ -7,7 +7,7 @@ import type {
   StudentProfileInput,
 } from '../../models/student';
 import type { StudentFormErrors } from '../../utils/studentValidation';
-import { AppButton } from '../common/AppButton';
+import { AppChoiceChip } from '../common/AppChoiceChip';
 import { AppInput } from '../common/AppInput';
 import { AppText } from '../common/AppText';
 
@@ -46,12 +46,12 @@ export function StudentProfileFormFields({
       <AppText variant="label">Gender</AppText>
       <View style={styles.options}>
         {(['MALE', 'FEMALE', 'OTHER'] as const).map(gender => (
-          <AppButton
+          <AppChoiceChip
             disabled={disabled}
             key={gender}
             onPress={() => onChange({ ...value, gender })}
-            title={gender[0] + gender.slice(1).toLowerCase()}
-            variant={value.gender === gender ? 'primary' : 'outline'}
+            label={gender[0] + gender.slice(1).toLowerCase()}
+            selected={value.gender === gender}
           />
         ))}
       </View>
@@ -156,16 +156,14 @@ export function GuardianFormFields({
       <View style={styles.options}>
         {(['FATHER', 'MOTHER', 'GUARDIAN', 'OTHER'] as const).map(
           relationship => (
-            <AppButton
+            <AppChoiceChip
               disabled={disabled}
               key={relationship}
               onPress={() => onChange({ ...value, relationship })}
-              title={
+              label={
                 relationship[0] + relationship.slice(1).toLowerCase()
               }
-              variant={
-                value.relationship === relationship ? 'primary' : 'outline'
-              }
+              selected={value.relationship === relationship}
             />
           ),
         )}
@@ -267,12 +265,12 @@ export function GuardianFormFields({
             | 'parentAppAccessEnabled'
           >;
           return (
-            <AppButton
+            <AppChoiceChip
               disabled={disabled}
               key={key}
               onPress={() => onChange({ ...value, [typedKey]: !value[typedKey] })}
-              title={label}
-              variant={value[typedKey] ? 'primary' : 'outline'}
+              label={label}
+              selected={value[typedKey]}
             />
           );
         })}

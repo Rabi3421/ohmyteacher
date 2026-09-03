@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { AppButton } from '../../components/common/AppButton';
+import { AppChoiceChip } from '../../components/common/AppChoiceChip';
 import { AppCard } from '../../components/common/AppCard';
 import { AppHeader } from '../../components/common/AppHeader';
 import { AppInput } from '../../components/common/AppInput';
@@ -119,11 +120,11 @@ export function CreateStaffUserScreen({
           <AppText style={styles.section} variant="heading3">Fixed backend role</AppText>
           <View style={styles.options}>
             {roleOptions.map(option => (
-              <AppButton
+              <AppChoiceChip
                 key={option}
                 onPress={() => setRole(option)}
-                title={getBackendStaffRoleLabel(option)}
-                variant={role === option ? 'primary' : 'outline'}
+                label={getBackendStaffRoleLabel(option)}
+                selected={role === option}
               />
             ))}
           </View>
@@ -133,12 +134,12 @@ export function CreateStaffUserScreen({
           </AppText>
           <View style={styles.options}>
             {activeBranches.map(branch => (
-              <AppButton
+              <AppChoiceChip
                 disabled={actor?.role === 'BRANCH_ADMIN'}
                 key={branch.id}
                 onPress={() => setBranchId(branch.id)}
-                title={`${branchId === branch.id ? '✓ ' : ''}${branch.name}`}
-                variant={branchId === branch.id ? 'primary' : 'outline'}
+                label={`${branchId === branch.id ? '✓ ' : ''}${branch.name}`}
+                selected={branchId === branch.id}
               />
             ))}
           </View>

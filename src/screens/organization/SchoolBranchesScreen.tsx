@@ -3,6 +3,7 @@ import { StyleSheet, View } from 'react-native';
 
 import { AppBadge } from '../../components/common/AppBadge';
 import { AppButton } from '../../components/common/AppButton';
+import { AppChoiceChip } from '../../components/common/AppChoiceChip';
 import { AppCard } from '../../components/common/AppCard';
 import { AppHeader } from '../../components/common/AppHeader';
 import { AppScreen } from '../../components/common/AppScreen';
@@ -85,12 +86,12 @@ export function SchoolBranchesScreen({
         </AppText>
         <View style={styles.filters}>
           {(['ALL', 'ACTIVE', 'INACTIVE'] as const).map(filter => (
-            <AppButton
+            <AppChoiceChip
               key={filter}
               onPress={() => setStatus(filter)}
               style={styles.filter}
-              title={filter === 'ALL' ? 'All' : filter[0] + filter.slice(1).toLowerCase()}
-              variant={status === filter ? 'primary' : 'outline'}
+              label={filter === 'ALL' ? 'All' : filter[0] + filter.slice(1).toLowerCase()}
+              selected={status === filter}
             />
           ))}
         </View>

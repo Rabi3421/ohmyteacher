@@ -1,18 +1,18 @@
 import React, { useState } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { ScrollView, StatusBar, StyleSheet, View } from 'react-native';
 
 import { AppText } from '../../components/common/AppText';
-import { AppCard } from '../../components/common/AppCard';
 import { AppAvatar } from '../../components/common/AppAvatar';
 import { AppListRow } from '../../components/common/AppListRow';
-import { TAB_BAR_HEIGHT } from '../../components/layout/AppBottomTabBar';
+import { AppSectionLabel } from '../../components/common/AppSectionLabel';
+import { AppHubHeader } from '../../components/layout/AppHubHeader';
 import { ConfirmationDialog } from '../../components/feedback/ConfirmationDialog';
 import { ROUTES } from '../../constants/routes';
 import { useAppTheme } from '../../hooks/useAppTheme';
 import { useTabFocus } from '../../hooks/useTabFocus';
 import type { RoleScreenProps } from '../../navigation/navigationTypes';
 import { useAuthStore } from '../../store';
+import { brandGradientTop } from '../../theme/gradients';
 import { getRoleLabel } from '../../utils/role';
 
 export function MoreMenuScreen({ navigation, route }: RoleScreenProps<'MoreMenu'>) {
@@ -24,7 +24,6 @@ export function MoreMenuScreen({ navigation, route }: RoleScreenProps<'MoreMenu'
   const school = useAuthStore(s => s.school);
   const switchWorkspace = useAuthStore(s => s.switchWorkspace);
   const logout = useAuthStore(s => s.logout);
-  const insets = useSafeAreaInsets();
   const [showLogout, setShowLogout] = useState(false);
 
   useTabFocus('more');
@@ -43,32 +42,57 @@ export function MoreMenuScreen({ navigation, route }: RoleScreenProps<'MoreMenu'
   const roleLabel = getRoleLabel(role);
 
   return (
-    <View style={[styles.root, { backgroundColor: theme.colors.background }]}>
-      <View style={[styles.header, { backgroundColor: theme.colors.surface, borderBottomColor: theme.colors.border, paddingTop: insets.top + 8 }]}>
-        <AppText style={{ color: theme.colors.textPrimary }} variant="heading3">More</AppText>
-      </View>
+    <View
+      style={[styles.root, { backgroundColor: theme.colors.background }]}
+      testID="more-menu-screen"
+    >
+      <StatusBar
+        backgroundColor={brandGradientTop(theme.mode)}
+        barStyle="light-content"
+      />
+
+      <AppHubHeader
+        icon="settings"
+        subtitle="Account, organisation, and preferences"
+        title="More"
+      />
 
       <ScrollView
-        contentContainerStyle={[styles.content, { paddingBottom: TAB_BAR_HEIGHT + insets.bottom + 16 }]}
+        contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
         {/* Profile Card */}
-        <AppCard contentStyle={styles.profileCard}>
-          <View style={styles.profileRow}>
-            <AppAvatar name={user?.name ?? 'User'} size={52} />
-            <View style={styles.profileInfo}>
-              <AppText style={{ color: theme.colors.textPrimary }} variant="title">{user?.name || 'My Account'}</AppText>
-              <AppText style={{ color: theme.colors.primary, marginTop: 2 }} variant="caption">{roleLabel}</AppText>
-              <AppText style={{ color: theme.colors.textSecondary, marginTop: 1 }} variant="caption" numberOfLines={1}>{workspaceName}</AppText>
+        <View
+          style={[
+            styles.profileCard,
+            {
+              backgroundColor: theme.colors.surface,
+              borderColor: theme.colors.border,
+              shadowColor: theme.colors.shadow,
+            },
+          ]}
+        >
+          <AppAvatar name={user?.name ?? 'User'} size={54} />
+          <View style={styles.profileInfo}>
+            <AppText numberOfLines={1} style={[styles.profileName, { color: theme.colors.textPrimary }]}>
+              {user?.name || 'My Account'}
+            </AppText>
+            <View style={styles.profileChips}>
+              <View style={[styles.chip, { backgroundColor: theme.colors.primarySubtle }]}>
+                <AppText style={{ color: theme.colors.primary }} variant="caption">{roleLabel}</AppText>
+              </View>
             </View>
+            <AppText numberOfLines={1} style={[styles.profileWorkspace, { color: theme.colors.textSecondary }]} variant="caption">
+              {workspaceName}
+            </AppText>
           </View>
-        </AppCard>
+        </View>
 
         {/* Organisation */}
         {(isSchoolAdmin || isSuperAdmin) && (
-          <View style={[styles.section, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+          <View style={[styles.section, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, shadowColor: theme.colors.shadow }]}>
             <View style={styles.sectionHeader}>
-              <AppText style={{ color: theme.colors.textSecondary }} variant="label">ORGANISATION</AppText>
+              <AppSectionLabel title="Organisation" />
             </View>
             {isSuperAdmin ? (
               <AppListRow leftIcon="school" leftIconBg={theme.colors.primarySubtle} leftIconColor={theme.colors.primary} onPress={() => navigation.navigate(ROUTES.SCHOOLS)} title="Manage Schools" />
@@ -86,9 +110,9 @@ export function MoreMenuScreen({ navigation, route }: RoleScreenProps<'MoreMenu'
 
         {/* Reports */}
         {canViewReports && schoolId ? (
-          <View style={[styles.section, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+          <View style={[styles.section, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, shadowColor: theme.colors.shadow }]}>
             <View style={styles.sectionHeader}>
-              <AppText style={{ color: theme.colors.textSecondary }} variant="label">REPORTS</AppText>
+              <AppSectionLabel accent="#E84D8A" title="Reports" />
             </View>
             <AppListRow leftIcon="bar-chart" leftIconBg="#FDECF3" leftIconColor="#E84D8A" onPress={() => navigation.navigate(ROUTES.REPORTS_DASHBOARD, { schoolId })} title="Reports Dashboard" />
             <AppListRow leftIcon="trending-up" leftIconBg="#FDECF3" leftIconColor="#E84D8A" onPress={() => navigation.navigate(ROUTES.FEE_ANALYTICS_DASHBOARD, { schoolId })} title="Fee Analytics" />
@@ -98,9 +122,9 @@ export function MoreMenuScreen({ navigation, route }: RoleScreenProps<'MoreMenu'
 
         {/* Communication */}
         {canManageCommunication && schoolId ? (
-          <View style={[styles.section, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+          <View style={[styles.section, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, shadowColor: theme.colors.shadow }]}>
             <View style={styles.sectionHeader}>
-              <AppText style={{ color: theme.colors.textSecondary }} variant="label">COMMUNICATION</AppText>
+              <AppSectionLabel accent="#7A5AF8" title="Communication" />
             </View>
             <AppListRow leftIcon="inbox" leftIconBg="#F0ECFF" leftIconColor="#7A5AF8" onPress={() => navigation.navigate(ROUTES.COMMUNICATION_DASHBOARD, { branchId, schoolId })} title="Communication Dashboard" />
             <AppListRow leftIcon="bell" leftIconBg="#F0ECFF" leftIconColor="#7A5AF8" onPress={() => navigation.navigate(ROUTES.NOTIFICATION_CENTER, { branchId, schoolId })} title="Notifications" />
@@ -109,9 +133,9 @@ export function MoreMenuScreen({ navigation, route }: RoleScreenProps<'MoreMenu'
 
         {/* Staff Management */}
         {isSchoolAdmin && schoolId ? (
-          <View style={[styles.section, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+          <View style={[styles.section, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, shadowColor: theme.colors.shadow }]}>
             <View style={styles.sectionHeader}>
-              <AppText style={{ color: theme.colors.textSecondary }} variant="label">STAFF MANAGEMENT</AppText>
+              <AppSectionLabel accent="#F59A23" title="Staff Management" />
             </View>
             <AppListRow leftIcon="users" leftIconBg="#FFF4E4" leftIconColor="#F59A23" onPress={() => navigation.navigate(ROUTES.STAFF_USERS, { schoolId })} title="Staff Users" />
             <AppListRow leftIcon="shield-settings" leftIconBg="#FFF4E4" leftIconColor="#F59A23" onPress={() => navigation.navigate(ROUTES.ROLE_LIST, { schoolId })} title="Roles & Permissions" />
@@ -119,9 +143,9 @@ export function MoreMenuScreen({ navigation, route }: RoleScreenProps<'MoreMenu'
         ) : null}
 
         {/* Account */}
-        <View style={[styles.section, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+        <View style={[styles.section, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, shadowColor: theme.colors.shadow }]}>
           <View style={styles.sectionHeader}>
-            <AppText style={{ color: theme.colors.textSecondary }} variant="label">ACCOUNT</AppText>
+            <AppSectionLabel title="Account" />
           </View>
           {hasMultipleWorkspaces ? (
             <AppListRow leftIcon="globe" leftIconBg={theme.colors.primarySubtle} leftIconColor={theme.colors.primary} onPress={() => switchWorkspace()} title="Switch Workspace" />
@@ -145,12 +169,33 @@ export function MoreMenuScreen({ navigation, route }: RoleScreenProps<'MoreMenu'
 }
 
 const styles = StyleSheet.create({
-  content: { gap: 12, padding: 16 },
-  header: { borderBottomWidth: StyleSheet.hairlineWidth, paddingBottom: 16, paddingHorizontal: 20 },
-  profileCard: { padding: 16 },
+  chip: { borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4 },
+  content: { gap: 14, paddingBottom: 28, paddingHorizontal: 20, paddingTop: 20 },
+  profileCard: {
+    alignItems: 'center',
+    borderRadius: 20,
+    borderWidth: StyleSheet.hairlineWidth,
+    elevation: 3,
+    flexDirection: 'row',
+    gap: 14,
+    padding: 16,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.07,
+    shadowRadius: 12,
+  },
+  profileChips: { flexDirection: 'row', gap: 6, marginTop: 6 },
   profileInfo: { flex: 1 },
-  profileRow: { alignItems: 'center', flexDirection: 'row', gap: 14 },
+  profileName: { fontSize: 17, fontWeight: '700', lineHeight: 23 },
+  profileWorkspace: { marginTop: 6 },
   root: { flex: 1 },
-  section: { borderRadius: 14, borderWidth: 1, overflow: 'hidden' },
-  sectionHeader: { paddingBottom: 4, paddingHorizontal: 16, paddingTop: 12 },
+  section: {
+    borderRadius: 20,
+    borderWidth: StyleSheet.hairlineWidth,
+    elevation: 3,
+    overflow: 'hidden',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.07,
+    shadowRadius: 12,
+  },
+  sectionHeader: { paddingBottom: 6, paddingHorizontal: 16, paddingTop: 14 },
 });

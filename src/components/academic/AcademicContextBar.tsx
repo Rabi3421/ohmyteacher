@@ -11,6 +11,7 @@ import {
 } from '../../store';
 import { AppBadge } from '../common/AppBadge';
 import { AppButton } from '../common/AppButton';
+import { AppChoiceChip } from '../common/AppChoiceChip';
 import { AppCard } from '../common/AppCard';
 import { AppText } from '../common/AppText';
 
@@ -210,7 +211,7 @@ export function AcademicContextBar({
       </AppText>
       <View style={styles.options}>
         {availableBranches.map(branch => (
-          <AppButton
+          <AppChoiceChip
             key={branch.id}
             onPress={() => {
               if (!context || branch.id === context.branchId) return;
@@ -219,10 +220,8 @@ export function AcademicContextBar({
                 selectedSession?.status,
               );
             }}
-            title={branch.name}
-            variant={
-              context?.branchId === branch.id ? 'primary' : 'outline'
-            }
+            label={branch.name}
+            selected={context?.branchId === branch.id}
           />
         ))}
       </View>
@@ -231,7 +230,7 @@ export function AcademicContextBar({
       </AppText>
       <View style={styles.options}>
         {availableSessions.map(session => (
-          <AppButton
+          <AppChoiceChip
             key={session.id}
             onPress={() => {
               if (!context || session.id === context.academicSessionId) return;
@@ -240,12 +239,8 @@ export function AcademicContextBar({
                 session.status,
               );
             }}
-            title={`${session.name}${session.status === 'CLOSED' ? ' · Closed' : ''}`}
-            variant={
-              context?.academicSessionId === session.id
-                ? 'primary'
-                : 'outline'
-            }
+            label={`${session.name}${session.status === 'CLOSED' ? ' · Closed' : ''}`}
+            selected={context?.academicSessionId === session.id}
           />
         ))}
       </View>
@@ -271,6 +266,6 @@ const styles = StyleSheet.create({
   label: { marginBottom: 6, marginTop: 14 },
   options: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   notice: { gap: 8, marginTop: 12 },
-  readOnly: { borderRadius: 10, marginTop: 14, padding: 10 },
+  readOnly: { borderRadius: 12, marginTop: 14, padding: 12 },
   titleRow: { alignItems: 'center', flexDirection: 'row', gap: 12 },
 });

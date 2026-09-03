@@ -3,6 +3,7 @@ import { StyleSheet, View } from 'react-native';
 
 import { AppBadge } from '../../components/common/AppBadge';
 import { AppButton } from '../../components/common/AppButton';
+import { AppChoiceChip } from '../../components/common/AppChoiceChip';
 import { AppCard } from '../../components/common/AppCard';
 import { AppHeader } from '../../components/common/AppHeader';
 import { AppInput } from '../../components/common/AppInput';
@@ -64,9 +65,11 @@ export function CreateFeeStructureScreen({ navigation, route }: RoleScreenProps<
         {!reviewing ? (
           <View style={styles.fields}>
             <AppText variant="label">Active Class</AppText>
-            <View style={styles.options}>{availableClasses.map(item => <AppButton key={item.classId} onPress={() => { setClassId(item.classId); setFeeHeadId(''); }} title={item.className} variant={classId === item.classId ? 'primary' : 'outline'} />)}</View>
+            <View style={styles.options}>{availableClasses.map(item => <AppChoiceChip key={item.classId} onPress={() => { setClassId(item.classId); setFeeHeadId(''); }} label={item.className}
+            selected={classId === item.classId} />)}</View>
             <AppText variant="label">Active Fee Head not already used</AppText>
-            <View style={styles.options}>{availableHeads.map(item => <AppButton key={item.id} onPress={() => setFeeHeadId(item.id)} title={item.name} variant={feeHeadId === item.id ? 'primary' : 'outline'} />)}</View>
+            <View style={styles.options}>{availableHeads.map(item => <AppChoiceChip key={item.id} onPress={() => setFeeHeadId(item.id)} label={item.name}
+            selected={feeHeadId === item.id} />)}</View>
             <AppInput
               error={amountError ?? error?.fieldErrors?.amount}
               helperText="Canonical rupees; no comma/sign; maximum 99,999,999.99"
@@ -77,8 +80,10 @@ export function CreateFeeStructureScreen({ navigation, route }: RoleScreenProps<
               value={amount}
             />
             <View style={styles.options}>
-              <AppButton onPress={() => setMandatory(true)} title="Mandatory" variant={mandatory ? 'primary' : 'outline'} />
-              <AppButton onPress={() => setMandatory(false)} title="Optional" variant={!mandatory ? 'primary' : 'outline'} />
+              <AppChoiceChip onPress={() => setMandatory(true)} label="Mandatory"
+                selected={mandatory} />
+              <AppChoiceChip onPress={() => setMandatory(false)} label="Optional"
+                selected={!mandatory} />
             </View>
             {error && !error.fieldErrors ? <InlineError message={error.message} /> : null}
             <AppButton disabled={!classId || !feeHeadId || !amount} onPress={review} title="Review Item" />
